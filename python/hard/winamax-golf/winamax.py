@@ -11,10 +11,13 @@ FORBIDDEN = set([WATER, FILLED_HOLE, *ARROWS])
 
 grid = []
 
+def debug(text):
+    print(text, file=sys.stderr,flush=True)
+
 def print_grid(grid):
     for row in grid:
-        print(row, file=sys.stderr,flush=True)
-    # print(grid)
+        debug(row)
+    debug(' ')
 
 def is_inbounds(point):
     return not (point.x < 0 or point.x >= width or point.y < 0 or point.y >= height)
@@ -29,33 +32,17 @@ def set_mapping(grid, point, value):
 
 
 class Point:
-
     def __init__(self, x, y):
         self.x = x
         self.y = y
-
-    def l1dist(self, other_point):
-        modulus_bs = lambda x, mod: min(x, mod-x)
-        d = modulus_bs(abs(self.x-other_point.x), width) + modulus_bs(abs(self.y-other_point.y), height)
-        # print(f"l1 dist: {self} and {other_point} is {d}", file=sys.stderr, flush=True)
-        return d
-
-    def __str__(self):
-        return f"P({self.x},{self.y})"
-
     def __repr__(self):
-        return self.__str__()
-
+        return f"P({self.x},{self.y})"
     def __eq__(self, othr):
-        return (isinstance(othr, type(self))
-                and (self.x, self.y) ==
-                (othr.x, othr.y))
+        return (self.x, self.y) ==(othr.x, othr.y)
     def __hash__(self):
         return hash((self.x, self.y))
-
     def add(self, other_point):
         return Point(self.x + other_point.x, self.y+other_point.y)
-
     def mult(self, multiplier):
         return Point(self.x * multiplier, self.y * multiplier)
 
@@ -66,13 +53,9 @@ class Node:
         self.dist = dist
         self.path = path
         self.course = course
-
-    def __str__(self):
+    def __repr__(self):
         # todo path maybe?
         return f"N({self.p}, dist={self.dist})"
-
-    def __repr__(self):
-        return self.__str__()
 
     def set_arrow(self, course, poss_dir, arrow):
         p = self.p
@@ -164,7 +147,8 @@ def solve(course):
         x, y, value = ball
         # print(x, y, value)
         final_node = Search(Point(x,y), "H", curr_course).search()
-        print(f"", file=sys.stderr, flush=True)
+        debug(f"")
+
 
         curr_course = final_node.course
         print_grid(curr_course)
