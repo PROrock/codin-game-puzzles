@@ -20,8 +20,12 @@ class Point:
     def __hash__(self):
         return hash((self.x, self.y))
 
-    def add(self, other_point):
+    def __add__(self, other_point):
         return Point((self.x + other_point.x), (self.y+other_point.y))
+    def __sub__(self, other_point):
+        return Point((self.x - other_point.x), (self.y-other_point.y))
+    def __mul__(self, multiplier):
+        return Point(self.x * multiplier, self.y * multiplier)
 
 class Vect:
     """Immutable 2D vector"""
