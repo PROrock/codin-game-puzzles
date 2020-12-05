@@ -69,7 +69,7 @@ class Node:
 
         new_nodes = []
         # possibilities = [Point(x,y) for x,y in zip([-1,1,0,0],[0,0,-1,1])]
-        # print(f"expand {self}", file=sys.stderr, flush=True)
+        # debug(f"expand {self}")
         # random.shuffle(possibilities) # maybe worse than without shuffle?
         for poss, arrow in possibilities2:
             mult_poss = poss.mult(self.dist)
@@ -79,20 +79,19 @@ class Node:
                 continue
 
             map_value = mapping(grid, new_p)
-            # print(f"new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}", file=sys.stderr, flush=True)
-            if(map_value in [DOT, HOLE]):
+            # debug(f"new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
+            if map_value in [DOT, HOLE]:
                 new_course = copy.deepcopy(self.course)
                 self.set_arrow(new_course, poss, arrow)
-                # print(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}", file=sys.stderr, flush=True)
+                # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
                 print_grid(new_course)
                 new_nodes.append(Node(new_p, self.dist-1, copy.copy(self.path)+[self.p], copy.deepcopy(new_course)))
-        # print(f"expanded from {self} are: {[str(node) for node in new_nodes]}", file=sys.stderr, flush=True)
+        # debug(f"expanded from {self} are: {[str(node) for node in new_nodes]}")
         return new_nodes
 
 class Search:
-    def __init__(self, start, goals, course):
+    def __init__(self, start, course):
         self.start = start
-        self.goals = goals
         self.course = course
 
     def search(self):
@@ -100,20 +99,15 @@ class Search:
 
         while len(front) > 0:
             node = front.pop(0) ## take first element -> breadth-first
-            if True: ## todo
-                if(mapping(node.course, node.p) in self.goals):
-                    node.path.append(node.p)
-                    set_mapping(node.course, node.p, FILLED_HOLE)
-                    print(f"Found goal: '{mapping(grid, node.p)}'. Dist {node.dist}. Path is {node.path}", file=sys.stderr, flush=True)
-                    return node
-                new_nodes = node.expand()
-                front.extend(new_nodes)
-            else:
-                # print(f"l1 dist: {self} and {other_point} is {d}", file=sys.stderr, flush=True)
-                pass
-        print(f"Haven't found one of goals:{self.goals} for start: {self.start}", file=sys.stderr, flush=True)
+            if mapping(node.course, node.p) == HOLE:
+                node.path.append(node.p)
+                set_mapping(node.course, node.p, FILLED_HOLE)
+                debug(f"Found goal: '{mapping(grid, node.p)}'. Dist {node.dist}. Path is {node.path}")
+                return node
+            new_nodes = node.expand()
+            front.extend(new_nodes)
+        debug(f"Haven't found one of goals(H) for start: {self.start}")
         return None
-
 
 
 possibilities2 = [(Point(x,y),arr) for x,y,arr in zip([-1,1,0,0],[0,0,-1,1],list("<>^v"))]
@@ -146,7 +140,7 @@ def solve(course):
 
         x, y, value = ball
         # print(x, y, value)
-        final_node = Search(Point(x,y), "H", curr_course).search()
+        final_node = Search(Point(x,y), curr_course).search()
         debug(f"")
 
 
