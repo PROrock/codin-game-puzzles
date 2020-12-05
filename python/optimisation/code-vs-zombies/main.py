@@ -92,16 +92,19 @@ while True:
         debug(f"{h}, a_turns={h.ash_turns}, z_turns={h.min_z_turns}, diff = {h.diff}")
 
 
-    close_zombies_v = [z.vnext for z in zombies.values() if z.ash_dist < 2 * ASH_RANGE]
-    debug([z.ash_dist for z in zombies.values()])
-    debug(close_zombies_v)
-    c = centroid(close_zombies_v) if close_zombies_v else Vect(-ASH_RANGE, -ASH_RANGE)
-    dist_human_z_centroid = (next(iter(humans.values())).v - c).length()
-    debug(f"centroid={c}, dist_human_z_centroid={dist_human_z_centroid}")
-    # todo following cond for < ASH_RANGE is probably too restrictive (not every time!_, but I'm too tired to think about it now
-    if len(humans) == 1 and dist_human_z_centroid < 1 * ASH_RANGE:
-        # this is nice, but added only lousy 290 points :-(
-        target_v = c
+    # close_zombies_v = [z.vnext for z in zombies.values() if z.ash_dist < 2 * ASH_RANGE]
+    # debug([z.ash_dist for z in zombies.values()])
+    # debug(close_zombies_v)
+    # c = centroid(close_zombies_v) if close_zombies_v else Vect(-ASH_RANGE, -ASH_RANGE)
+    # dist_human_z_centroid = (next(iter(humans.values())).v - c).length()
+    # debug(f"centroid={c}, dist_human_z_centroid={dist_human_z_centroid}")
+    # # todo following cond for < ASH_RANGE is probably too restrictive (not every time!_, but I'm too tired to think about it now
+    # if len(humans) == 1 and dist_human_z_centroid < 1 * ASH_RANGE:
+    #     # this is nice, but added only lousy 290 points :-(
+    #     target_v = c
+
+    if human_id in humans:
+        target_v = Vect(human_x, human_y)
     else:
         # todo - take centroid of humans which are close together instead of just one - compute centroid, dist to it and somehow threshold it?
         max_h = max(humans.values(), key=lambda h:h.diff)
