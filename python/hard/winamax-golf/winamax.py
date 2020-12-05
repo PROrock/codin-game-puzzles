@@ -62,6 +62,19 @@ class Node:
         for _ in range(self.dist):
             set_mapping(course, p, arrow)
             p = p.add(poss_dir)
+        # set_mapping(course, p, str(self.dist-1))
+
+    def get_final_p(self, poss):
+        new_p = self.p
+        for _ in range(self.dist-1):
+            new_p = new_p.add(poss)
+            if not is_inbounds(new_p) or not mapping(self.course, new_p) in set([DOT, WATER]):
+                return None
+
+        new_p = new_p.add(poss)
+        if not is_inbounds(new_p) or not mapping(self.course, new_p) in [DOT, HOLE]:
+            return None
+        return new_p
 
     def expand(self):
         if(self.dist == 0):
@@ -69,23 +82,19 @@ class Node:
 
         new_nodes = []
         # possibilities = [Point(x,y) for x,y in zip([-1,1,0,0],[0,0,-1,1])]
-        # debug(f"expand {self}")
+        debug(f"expand {self}")
         # random.shuffle(possibilities) # maybe worse than without shuffle?
         for poss, arrow in possibilities2:
-            mult_poss = poss.mult(self.dist)
-            new_p = self.p.add(mult_poss)
-
-            if not is_inbounds(new_p):
+            new_p = self.get_final_p(poss)
+            if new_p is None:
                 continue
 
-            map_value = mapping(grid, new_p)
-            # debug(f"new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
-            if map_value in [DOT, HOLE]:
-                new_course = copy.deepcopy(self.course)
-                self.set_arrow(new_course, poss, arrow)
-                # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
-                print_grid(new_course)
-                new_nodes.append(Node(new_p, self.dist-1, copy.copy(self.path)+[self.p], copy.deepcopy(new_course)))
+            # debug(f"new_point is {new_p}, map_val is: {mapping(grid, new_p)}, poss={poss}, arr={arrow}")
+            new_course = copy.deepcopy(self.course)
+            self.set_arrow(new_course, poss, arrow)
+            # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
+            print_grid(new_course)
+            new_nodes.append(Node(new_p, self.dist-1, copy.copy(self.path)+[self.p], copy.deepcopy(new_course)))
         # debug(f"expanded from {self} are: {[str(node) for node in new_nodes]}")
         return new_nodes
 
