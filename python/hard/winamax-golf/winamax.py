@@ -8,6 +8,7 @@ WATER = 'X'
 DOT = '.'
 ARROWS = list("<>^v")
 FORBIDDEN = set([WATER, FILLED_HOLE, *ARROWS])
+NUMBERS = set("123456789")
 
 grid = []
 
@@ -54,19 +55,17 @@ class Node:
         self.path = path
         self.course = course
     def __repr__(self):
-        # todo path maybe?
         return f"N({self.p}, dist={self.dist})"
 
-    def set_arrow(self, course, poss_dir, arrow):
-        p = self.p
-        for _ in range(self.dist):
+    def set_arrow(self, course, p, poss_dir, arrow, dist):
+        for _ in range(dist):
             set_mapping(course, p, arrow)
             p = p.add(poss_dir)
-        # set_mapping(course, p, str(self.dist-1))
+        set_mapping(course, p, str(dist-1))
 
-    def get_final_p(self, poss):
-        new_p = self.p
-        for _ in range(self.dist-1):
+    def get_final_p(self, p, poss, dist):
+        new_p = p
+        for _ in range(dist-1):
             new_p = new_p.add(poss)
             if not is_inbounds(new_p) or not mapping(self.course, new_p) in set([DOT, WATER]):
                 return None
@@ -74,24 +73,30 @@ class Node:
         new_p = new_p.add(poss)
         if not is_inbounds(new_p) or not mapping(self.course, new_p) in [DOT, HOLE]:
             return None
+        if dist==1 and mapping(self.course, new_p) != HOLE:
+            return None
         return new_p
 
     def expand(self):
-        if(self.dist == 0):
+        # ball = find_ball(self.course)
+        ball = highest_ball(self.course)
+        if ball is None:
             return []
 
+        x,y,dist = ball
+        dist = int(dist)
+        p = Point(x,y)
+
         new_nodes = []
-        # possibilities = [Point(x,y) for x,y in zip([-1,1,0,0],[0,0,-1,1])]
         debug(f"expand {self}")
-        # random.shuffle(possibilities) # maybe worse than without shuffle?
         for poss, arrow in possibilities2:
-            new_p = self.get_final_p(poss)
+            new_p = self.get_final_p(p, poss, dist)
             if new_p is None:
                 continue
 
             # debug(f"new_point is {new_p}, map_val is: {mapping(grid, new_p)}, poss={poss}, arr={arrow}")
             new_course = copy.deepcopy(self.course)
-            self.set_arrow(new_course, poss, arrow)
+            self.set_arrow(new_course, p, poss, arrow, dist)
             # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
             print_grid(new_course)
             new_nodes.append(Node(new_p, self.dist-1, copy.copy(self.path)+[self.p], copy.deepcopy(new_course)))
@@ -104,14 +109,12 @@ class Search:
         self.course = course
 
     def search(self):
-        front = [Node(self.start, int(mapping(grid, self.start)), [], self.course)]
+        front = [Node(self.start, -1, [], self.course)]
 
         while len(front) > 0:
             node = front.pop(0) ## take first element -> breadth-first
-            if mapping(node.course, node.p) == HOLE:
-                node.path.append(node.p)
-                set_mapping(node.course, node.p, FILLED_HOLE)
-                debug(f"Found goal: '{mapping(grid, node.p)}'. Dist {node.dist}. Path is {node.path}")
+            if find_ball(node.course) is None:
+                debug(f"Found goal. Dist {node.dist}. Path is {node.path}")
                 return node
             new_nodes = node.expand()
             front.extend(new_nodes)
@@ -128,37 +131,31 @@ for i in range(height):
 
 print_grid(grid)
 
-def find_ball(grid):
+def find_ball(course):
     for y in range(height):
         for x in range(width):
-            # todo - can be faster if no point
-            value = mapping(grid, Point(x,y))
-            if value in list("123456789"):
+            value = course[y][x]
+            if value in set("123456789") and grid[y][x] != HOLE:
                 return x, y, value
     return None
 
-# def is_valid(course, ):
+def highest_ball(course):
+    max_val = -1
+    max_xy = (None, None)
+    for y in range(height):
+        for x, value in enumerate(course[y]):
+            if value in NUMBERS and int(value) > max_val and grid[y][x] != HOLE:
+                max_val = int(value)
+                max_xy = (x,y)
+    return (*max_xy, max_val)
+
 
 def solve(course):
-    curr_course = course
-    while True:
-        # for one ball
-        ball = find_ball(curr_course)
-        if ball is None:
-            break
-
-        x, y, value = ball
-        # print(x, y, value)
-        final_node = Search(Point(x,y), curr_course).search()
-        debug(f"")
-
-
-        curr_course = final_node.course
-        print_grid(curr_course)
-
+    final_node = Search(None, course).search()
+    debug("")
     return final_node.course
 
 result = solve(grid)
 for row in result:
-    replaced = [c.replace(FILLED_HOLE, DOT).replace(WATER, DOT) for c in row]
+    replaced = [DOT if c in set("0123456789FX") else c for c in row]
     print(''.join(replaced))
