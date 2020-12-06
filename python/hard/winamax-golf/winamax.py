@@ -59,12 +59,9 @@ class Ball:
         return self.p.x==other.p.x and self.p.y==other.p.y # and self.dist==other.dist
 
 class Node:
-    def __init__(self, dist, course, balls):
-        self.dist = dist
+    def __init__(self, course, balls):
         self.course = course
         self.balls = balls
-    def __repr__(self):
-        return f"N(dist={self.dist})"
 
     def set_arrow(self, course, p, poss_dir, arrow, dist):
         for _ in range(dist):
@@ -121,7 +118,7 @@ class Node:
             new_ball = Ball(new_p, dist - 1)
             bisect.insort(balls, new_ball)
             global_dist += 1
-            result = Node(global_dist, new_course, balls).recur()
+            result = Node(new_course, balls).recur()
             if result:
                 return result
             # debug(f"Backtracking from {new_ball}")
@@ -154,7 +151,7 @@ course = copy.deepcopy(grid)
 balls = get_balls(course)
 balls.sort()
 
-result_node = Node(0, course, balls).recur()
+result_node = Node(course, balls).recur()
 result = result_node.course
 for row in result:
     replaced = [DOT if c in set("0123456789FX") else c for c in row]
