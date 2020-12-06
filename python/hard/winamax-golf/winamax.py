@@ -11,6 +11,11 @@ DOT = '.'
 ARROWS = list("<>^v")
 # FORBIDDEN = set([WATER, FILLED_HOLE, *ARROWS])
 NUMBERS = set("123456789")
+LAND_VALID_CHARS = set([DOT, HOLE])
+FLIGHT_VALID_CHARS = set([DOT, WATER])
+DIST_0_LAND_VALID_CHARS = {HOLE}
+
+
 PRINT_DEBUG = False
 global_dist = 0
 
@@ -27,14 +32,6 @@ def print_grid(grid):
 
 def is_inbounds(point):
     return not (point.x < 0 or point.x >= width or point.y < 0 or point.y >= height)
-
-def mapping(grid, point):
-    # if(not is_inbounds(point)):
-    #     return WATER
-    return grid[point.y][point.x]
-
-def set_mapping(grid, point, value):
-    grid[point.y][point.x] = value
 
 
 class Point:
@@ -61,7 +58,7 @@ class Ball:
     def __repr__(self):
         return f"B({self.p}, {self.dist})"
     def __eq__(self, other):
-        return self.p==other.p and self.dist==other.dist
+        return self.p.x==other.p.x and self.p.y==other.p.y # and self.dist==other.dist
 
 class Node:
     def __init__(self, dist, course, balls):
@@ -73,28 +70,30 @@ class Node:
 
     def set_arrow(self, course, p, poss_dir, arrow, dist):
         for _ in range(dist):
-            set_mapping(course, p, arrow)
+            course[p.y][p.x] = arrow
             p = p.add(poss_dir)
-        set_mapping(course, p, str(dist-1))
+        course[p.y][p.x] = str(dist - 1)
 
     def backtrack_arrow(self, course, p, poss_dir, dist):
-        set_mapping(course, p, str(dist))
+        course[p.y][p.x] = str(dist)
         for _ in range(dist):
             p = p.add(poss_dir)
-            set_mapping(course, p, mapping(grid, p))
-
+            course[p.y][p.x] = grid[p.y][p.x]
 
     def get_final_p(self, p, poss, dist):
         new_p = p
+        # final_p = new_p.add(poss.mult(dist))
+        # if not is_inbounds(final_p):
+        #     return None
+
         for _ in range(dist-1):
             new_p = new_p.add(poss)
-            if not is_inbounds(new_p) or not mapping(self.course, new_p) in set([DOT, WATER]):
+            if not is_inbounds(new_p) or not self.course[new_p.y][new_p.x] in FLIGHT_VALID_CHARS:
                 return None
 
         new_p = new_p.add(poss)
-        if not is_inbounds(new_p) or not mapping(self.course, new_p) in [DOT, HOLE]:
-            return None
-        if dist==1 and mapping(self.course, new_p) != HOLE:
+        land_valid_chars = LAND_VALID_CHARS if dist > 1 else DIST_0_LAND_VALID_CHARS
+        if not is_inbounds(new_p) or not self.course[new_p.y][new_p.x] in land_valid_chars:
             return None
         return new_p
 
@@ -112,7 +111,7 @@ class Node:
             ball = balls.pop()
             # debug(f"ball={ball}")
             p, dist = ball.p, ball.dist
-            if dist == 0 or mapping(grid, p) == HOLE: # -> don't expand it more
+            if dist == 0 or grid[p.y][p.x] == HOLE: # -> don't expand it more
                 processed_balls.append(ball)
                 ball = None
         processed_balls.append(ball)
