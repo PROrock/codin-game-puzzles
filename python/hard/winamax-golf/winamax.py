@@ -3,13 +3,11 @@ import copy
 
 import sys
 
-MAX_DEPTH = 30
 HOLE = 'H'
 FILLED_HOLE = 'F'
 WATER = 'X'
 DOT = '.'
 ARROWS = list("<>^v")
-# FORBIDDEN = set([WATER, FILLED_HOLE, *ARROWS])
 NUMBERS = set("123456789")
 LAND_VALID_CHARS = set([DOT, HOLE])
 FLIGHT_VALID_CHARS = set([DOT, WATER])
@@ -46,15 +44,15 @@ class Point:
         return hash((self.x, self.y))
     def add(self, other_point):
         return Point(self.x + other_point.x, self.y+other_point.y)
-    def mult(self, multiplier):
-        return Point(self.x * multiplier, self.y * multiplier)
 
 class Ball:
     def __init__(self, p, dist):
         self.p=p
         self.dist=dist
     def __lt__(self, other):
-        return self.dist < other.dist
+        # reverse order! Min dist is at the end!
+        # reason - find out that there is no HOLE in neighborhood of a 1-ball soon
+        return self.dist > other.dist
     def __repr__(self):
         return f"B({self.p}, {self.dist})"
     def __eq__(self, other):
@@ -82,10 +80,6 @@ class Node:
 
     def get_final_p(self, p, poss, dist):
         new_p = p
-        # final_p = new_p.add(poss.mult(dist))
-        # if not is_inbounds(final_p):
-        #     return None
-
         for _ in range(dist-1):
             new_p = new_p.add(poss)
             if not is_inbounds(new_p) or not self.course[new_p.y][new_p.x] in FLIGHT_VALID_CHARS:
@@ -100,8 +94,8 @@ class Node:
     def recur(self):
         # debug(f"recur {self}: balls={balls}")
         global global_dist
-        if global_dist >= 50000:
-            return 1
+        # if global_dist >= 50000:
+        #     return 1
 
         processed_balls = []
         ball=None
@@ -123,17 +117,14 @@ class Node:
                 continue
 
             new_course = self.course
-            # new_course = copy.deepcopy(self.course)
             self.set_arrow(new_course, p, poss, arrow, dist)
-            # balls.append((new_p, dist-1))
             new_ball = Ball(new_p, dist - 1)
             bisect.insort(balls, new_ball)
             global_dist += 1
             result = Node(global_dist, new_course, balls).recur()
             if result:
                 return result
-            # back-track
-            # debug(f"Backtracking from {ball}")
+            # debug(f"Backtracking from {new_ball}")
             self.backtrack_arrow(new_course, p, poss, dist)
             balls.remove(new_ball)
 
@@ -152,31 +143,12 @@ for i in range(height):
 # print_grid(grid)
 
 def get_balls(course):
-    # todo make it via list comprehension -> should be faster
     balls=[]
     for y in range(height):
         for x, value in enumerate(course[y]):
             if value in NUMBERS:
                 balls.append(Ball(Point(x, y), int(value)))
     return balls
-
-def find_ball(course):
-    for y in range(height):
-        for x in range(width):
-            value = course[y][x]
-            if value in NUMBERS and grid[y][x] != HOLE:
-                return x, y, value
-    return None
-
-def highest_ball(course):
-    max_val = -1
-    max_xy = (None, None)
-    for y in range(height):
-        for x, value in enumerate(course[y]):
-            if value in NUMBERS and int(value) > max_val and grid[y][x] != HOLE:
-                max_val = int(value)
-                max_xy = (x,y)
-    return (*max_xy, max_val)
 
 course = copy.deepcopy(grid)
 balls = get_balls(course)
@@ -187,6 +159,3 @@ result = result_node.course
 for row in result:
     replaced = [DOT if c in set("0123456789FX") else c for c in row]
     print(''.join(replaced))
-
-# ideas for speedup:
-# - have balls (sorted?) collection instead of searching it every time

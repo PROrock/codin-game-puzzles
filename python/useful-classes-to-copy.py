@@ -54,4 +54,6 @@ class Vect:
         return Vect((self.x + other.x), (self.y + other.y))
     def __sub__(self, other):
         return Vect((self.x - other.x), (self.y - other.y))
+    def __mul__(self, multiplier):
+        return Vect(self.x * multiplier, self.y * multiplier)
 
