@@ -2,12 +2,13 @@ import copy
 
 import sys
 
+MAX_DEPTH = 30
 HOLE = 'H'
 FILLED_HOLE = 'F'
 WATER = 'X'
 DOT = '.'
 ARROWS = list("<>^v")
-FORBIDDEN = set([WATER, FILLED_HOLE, *ARROWS])
+# FORBIDDEN = set([WATER, FILLED_HOLE, *ARROWS])
 NUMBERS = set("123456789")
 
 grid = []
@@ -24,8 +25,8 @@ def is_inbounds(point):
     return not (point.x < 0 or point.x >= width or point.y < 0 or point.y >= height)
 
 def mapping(grid, point):
-    if(not is_inbounds(point)):
-        return WATER
+    # if(not is_inbounds(point)):
+    #     return WATER
     return grid[point.y][point.x]
 
 def set_mapping(grid, point, value):
@@ -49,13 +50,11 @@ class Point:
 
 
 class Node:
-    def __init__(self, p, dist, path, course):
-        self.p = p
+    def __init__(self, dist, course):
         self.dist = dist
-        self.path = path
         self.course = course
     def __repr__(self):
-        return f"N({self.p}, dist={self.dist})"
+        return f"N(dist={self.dist})"
 
     def set_arrow(self, course, p, poss_dir, arrow, dist):
         for _ in range(dist):
@@ -99,7 +98,7 @@ class Node:
             self.set_arrow(new_course, p, poss, arrow, dist)
             # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
             print_grid(new_course)
-            new_nodes.append(Node(new_p, self.dist-1, copy.copy(self.path)+[self.p], copy.deepcopy(new_course)))
+            new_nodes.append(Node(self.dist+1, copy.deepcopy(new_course)))
         # debug(f"expanded from {self} are: {[str(node) for node in new_nodes]}")
         return new_nodes
 
@@ -109,12 +108,16 @@ class Search:
         self.course = course
 
     def search(self):
-        front = [Node(self.start, -1, [], self.course)]
+        front = [Node(0, self.course)]
 
         while len(front) > 0:
             node = front.pop(0) ## take first element -> breadth-first
+            # if node.dist >= MAX_DEPTH:
+            #     debug(f"Node.dist exceeded ({node.dist}). Terminating.")
+            #     return None
+
             if find_ball(node.course) is None:
-                debug(f"Found goal. Dist {node.dist}. Path is {node.path}")
+                debug(f"Found goal. Dist {node.dist}.")
                 return node
             new_nodes = node.expand()
             front.extend(new_nodes)
@@ -135,7 +138,7 @@ def find_ball(course):
     for y in range(height):
         for x in range(width):
             value = course[y][x]
-            if value in set("123456789") and grid[y][x] != HOLE:
+            if value in NUMBERS and grid[y][x] != HOLE:
                 return x, y, value
     return None
 
