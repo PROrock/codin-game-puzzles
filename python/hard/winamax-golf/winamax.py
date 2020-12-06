@@ -62,6 +62,13 @@ class Node:
             p = p.add(poss_dir)
         set_mapping(course, p, str(dist-1))
 
+    def backtrack_arrow(self, course, p, poss_dir, dist):
+        set_mapping(course, p, str(dist))
+        for _ in range(dist):
+            p = p.add(poss_dir)
+            set_mapping(course, p, mapping(grid, p))
+
+
     def get_final_p(self, p, poss, dist):
         new_p = p
         for _ in range(dist-1):
@@ -76,52 +83,57 @@ class Node:
             return None
         return new_p
 
-    def expand(self):
-        # ball = find_ball(self.course)
-        ball = highest_ball(self.course)
-        if ball is None:
-            return []
+    # def expand(self):
+    #     # ball = find_ball(self.course)
+    #     ball = highest_ball(self.course)
+    #     if ball is None:
+    #         return []
+    #
+    #     x,y,dist = ball
+    #     dist = int(dist)
+    #     p = Point(x,y)
+    #
+    #     new_nodes = []
+    #     debug(f"expand {self}")
+    #     for poss, arrow in possibilities2:
+    #         new_p = self.get_final_p(p, poss, dist)
+    #         if new_p is None:
+    #             continue
+    #
+    #         # debug(f"new_point is {new_p}, map_val is: {mapping(grid, new_p)}, poss={poss}, arr={arrow}")
+    #         new_course = copy.deepcopy(self.course)
+    #         self.set_arrow(new_course, p, poss, arrow, dist)
+    #         # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
+    #         print_grid(new_course)
+    #         new_nodes.append(Node(self.dist+1, copy.deepcopy(new_course)))
+    #     # debug(f"expanded from {self} are: {[str(node) for node in new_nodes]}")
+    #     return new_nodes
 
+    def recur(self):
+        ball = highest_ball(self.course)
         x,y,dist = ball
+        if x is None:
+            return self
+
         dist = int(dist)
         p = Point(x,y)
 
-        new_nodes = []
-        debug(f"expand {self}")
+        # debug(f"recur {self}")
+        # print_grid(self.course)
         for poss, arrow in possibilities2:
             new_p = self.get_final_p(p, poss, dist)
             if new_p is None:
                 continue
 
-            # debug(f"new_point is {new_p}, map_val is: {mapping(grid, new_p)}, poss={poss}, arr={arrow}")
-            new_course = copy.deepcopy(self.course)
+            new_course = self.course
+            # new_course = copy.deepcopy(self.course)
             self.set_arrow(new_course, p, poss, arrow, dist)
-            # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
-            print_grid(new_course)
-            new_nodes.append(Node(self.dist+1, copy.deepcopy(new_course)))
-        # debug(f"expanded from {self} are: {[str(node) for node in new_nodes]}")
-        return new_nodes
+            result = Node(self.dist + 1, new_course).recur()
+            if result:
+                return result
+            # back-track
+            self.backtrack_arrow(new_course, p, poss, dist)
 
-class Search:
-    def __init__(self, start, course):
-        self.start = start
-        self.course = course
-
-    def search(self):
-        front = [Node(0, self.course)]
-
-        while len(front) > 0:
-            node = front.pop(0) ## take first element -> breadth-first
-            # if node.dist >= MAX_DEPTH:
-            #     debug(f"Node.dist exceeded ({node.dist}). Terminating.")
-            #     return None
-
-            if find_ball(node.course) is None:
-                debug(f"Found goal. Dist {node.dist}.")
-                return node
-            new_nodes = node.expand()
-            front.extend(new_nodes)
-        debug(f"Haven't found one of goals(H) for start: {self.start}")
         return None
 
 
@@ -152,13 +164,11 @@ def highest_ball(course):
                 max_xy = (x,y)
     return (*max_xy, max_val)
 
-
-def solve(course):
-    final_node = Search(None, course).search()
-    debug("")
-    return final_node.course
-
-result = solve(grid)
+course = copy.deepcopy(grid)
+result = Node(0, course).recur().course
 for row in result:
     replaced = [DOT if c in set("0123456789FX") else c for c in row]
     print(''.join(replaced))
+
+# ideas for speedup:
+# - have balls (sorted?) collection instead of searching it every time
