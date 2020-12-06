@@ -1,3 +1,4 @@
+import bisect
 import copy
 
 import sys
@@ -10,11 +11,14 @@ DOT = '.'
 ARROWS = list("<>^v")
 # FORBIDDEN = set([WATER, FILLED_HOLE, *ARROWS])
 NUMBERS = set("123456789")
+PRINT_DEBUG = False
+global_dist = 0
 
 grid = []
 
 def debug(text):
-    print(text, file=sys.stderr,flush=True)
+    if PRINT_DEBUG:
+        print(text, file=sys.stderr,flush=True)
 
 def print_grid(grid):
     for row in grid:
@@ -48,11 +52,22 @@ class Point:
     def mult(self, multiplier):
         return Point(self.x * multiplier, self.y * multiplier)
 
+class Ball:
+    def __init__(self, p, dist):
+        self.p=p
+        self.dist=dist
+    def __lt__(self, other):
+        return self.dist < other.dist
+    def __repr__(self):
+        return f"B({self.p}, {self.dist})"
+    def __eq__(self, other):
+        return self.p==other.p and self.dist==other.dist
 
 class Node:
-    def __init__(self, dist, course):
+    def __init__(self, dist, course, balls):
         self.dist = dist
         self.course = course
+        self.balls = balls
     def __repr__(self):
         return f"N(dist={self.dist})"
 
@@ -83,42 +98,25 @@ class Node:
             return None
         return new_p
 
-    # def expand(self):
-    #     # ball = find_ball(self.course)
-    #     ball = highest_ball(self.course)
-    #     if ball is None:
-    #         return []
-    #
-    #     x,y,dist = ball
-    #     dist = int(dist)
-    #     p = Point(x,y)
-    #
-    #     new_nodes = []
-    #     debug(f"expand {self}")
-    #     for poss, arrow in possibilities2:
-    #         new_p = self.get_final_p(p, poss, dist)
-    #         if new_p is None:
-    #             continue
-    #
-    #         # debug(f"new_point is {new_p}, map_val is: {mapping(grid, new_p)}, poss={poss}, arr={arrow}")
-    #         new_course = copy.deepcopy(self.course)
-    #         self.set_arrow(new_course, p, poss, arrow, dist)
-    #         # debug(f"GOOD new_point is {new_p}, map_val is: {map_value}, poss={poss}, arr={arrow}")
-    #         print_grid(new_course)
-    #         new_nodes.append(Node(self.dist+1, copy.deepcopy(new_course)))
-    #     # debug(f"expanded from {self} are: {[str(node) for node in new_nodes]}")
-    #     return new_nodes
-
     def recur(self):
-        ball = highest_ball(self.course)
-        x,y,dist = ball
-        if x is None:
-            return self
+        # debug(f"recur {self}: balls={balls}")
+        global global_dist
+        if global_dist >= 50000:
+            return 1
 
-        dist = int(dist)
-        p = Point(x,y)
+        processed_balls = []
+        ball=None
+        while ball is None:
+            if not balls:
+                return self
+            ball = balls.pop()
+            # debug(f"ball={ball}")
+            p, dist = ball.p, ball.dist
+            if dist == 0 or mapping(grid, p) == HOLE: # -> don't expand it more
+                processed_balls.append(ball)
+                ball = None
+        processed_balls.append(ball)
 
-        # debug(f"recur {self}")
         # print_grid(self.course)
         for poss, arrow in possibilities2:
             new_p = self.get_final_p(p, poss, dist)
@@ -128,12 +126,20 @@ class Node:
             new_course = self.course
             # new_course = copy.deepcopy(self.course)
             self.set_arrow(new_course, p, poss, arrow, dist)
-            result = Node(self.dist + 1, new_course).recur()
+            # balls.append((new_p, dist-1))
+            new_ball = Ball(new_p, dist - 1)
+            bisect.insort(balls, new_ball)
+            global_dist += 1
+            result = Node(global_dist, new_course, balls).recur()
             if result:
                 return result
             # back-track
+            # debug(f"Backtracking from {ball}")
             self.backtrack_arrow(new_course, p, poss, dist)
+            balls.remove(new_ball)
 
+        # debug(f"Cannot move ball {ball}, returning processed_balls {processed_balls}, back to balls")
+        balls.extend(processed_balls[::-1])
         return None
 
 
@@ -144,7 +150,16 @@ for i in range(height):
     row = list(input())
     grid.append(row)
 
-print_grid(grid)
+# print_grid(grid)
+
+def get_balls(course):
+    # todo make it via list comprehension -> should be faster
+    balls=[]
+    for y in range(height):
+        for x, value in enumerate(course[y]):
+            if value in NUMBERS:
+                balls.append(Ball(Point(x, y), int(value)))
+    return balls
 
 def find_ball(course):
     for y in range(height):
@@ -165,7 +180,11 @@ def highest_ball(course):
     return (*max_xy, max_val)
 
 course = copy.deepcopy(grid)
-result = Node(0, course).recur().course
+balls = get_balls(course)
+balls.sort()
+
+result_node = Node(0, course, balls).recur()
+result = result_node.course
 for row in result:
     replaced = [DOT if c in set("0123456789FX") else c for c in row]
     print(''.join(replaced))
