@@ -55,21 +55,44 @@ def getGoalPoint(last, land):
     return [int(math.floor((last[0]+land[0])/2)), last[1]]
 
 def addToPower(p, increment):
-    return min(P_MAX, max(P_MIN, p+increment))
+    return min(P_MAX, max(2, p+increment))
 
-def addToAngle(angle, increment):
-    return min(A_MAX, max(A_MIN, angle+increment))
+def addToAngle(angle, increment, goal_y, lander_y, vSpeed):
+    coef = get_coeff_max_angle(goal_y, lander_y, vSpeed)
+    debug(f"goal_y - lander_y={goal_y - lander_y}, m*vSpeed={30*vSpeed}, coeff is {coef}")
+    return int(min(coef*A_MAX, max(coef*A_MIN, angle+increment)))
 
 
-def get_angle_increment(lander, goalPoint, hSpeed, last, land):
-    if last[0] <= lander.x <= land[0] and abs(hSpeed) <= 0:
+def get_coeff_max_angle(goal_y, lander_y, vSpeed):
+    return 0.2 if goal_y - lander_y > 40 * vSpeed else 1
+
+
+def get_x_speed(angle, thrust):
+    return thrust * math.sin(angle)
+
+def get_angle_increment(lander, goalPoint, hSpeed, vSpeed, last, land):
+    if last[0] <= lander.x <= land[0] and abs(hSpeed) <= 2:
         diff_angle = -lander.rotate
+        debug(f"Over ")
         return sign(diff_angle) * min(abs(diff_angle), A_MAX_STEP)
 
-    # n_turns = abs(goalPoint[0]-lander.x)//hSpeed
+    coeff = get_coeff_max_angle(last[1], lander.y, vSpeed)
+
+    dir_to_goal = goalPoint[0] - lander.x
+    n_turns = abs(dir_to_goal) // max(abs(hSpeed), 1)
+    brake_speed = get_x_speed(coeff*A_MAX, P_MAX)
+    brake_turns = abs(hSpeed) / abs(brake_speed)
+    angle_diff_abs = abs(sign(dir_to_goal) * coeff*A_MAX - lander.rotate)
+    angle_brake_turns = angle_diff_abs / A_MAX_STEP
+    braking_turns = math.ceil(brake_turns + angle_brake_turns)
+    debug(f"brake_turns={brake_turns}, angle_diff_abs={angle_diff_abs}, angle_brake_turns={angle_brake_turns}; N turns={n_turns}")
+    if braking_turns >= n_turns:
+        # brake
+        debug(f"Braking")
+        return sign(hSpeed) * min(angle_diff_abs, A_MAX_STEP)
 
     diff = goalPoint[0]-lander.x-15*hSpeed
-    debug(diff)
+    debug(f"diff={diff}")
     return sign(-diff) * min(abs(diff), A_MAX_STEP)
 
 
@@ -91,8 +114,8 @@ while 1:
     X, Y, hSpeed, vSpeed, fuel, rotate, power = [int(i) for i in input().split()]
     lander = Lander(X, Y, hSpeed, vSpeed, fuel, rotate, power)
 
-    angle_increment = get_angle_increment(lander, goalPoint, hSpeed, last, land)
-    angle = addToAngle(lander.rotate, angle_increment)
+    angle_increment = get_angle_increment(lander, goalPoint, hSpeed, vSpeed, last, land)
+    angle = addToAngle(lander.rotate, angle_increment, last[1], lander.y, vSpeed)
 
     if vSpeed <= (-40) or angle != 0:
         newPower = addToPower(power, +1)
