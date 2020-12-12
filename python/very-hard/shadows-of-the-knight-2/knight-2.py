@@ -2,8 +2,13 @@ __author__ = 'ojelinek'
 import sys
 from math import floor, ceil, log2
 
+COLDER, WARMER, SAME, UNKNOWN='COLDER', 'WARMER', 'SAME', 'UNKNOWN'
+
 def debug(*objs):
-    print("DEBUG: ", *objs, file=sys.stderr)
+    print("DEBUG: ", *objs, file=sys.stderr, flush=True)
+
+def int_middle(lower_bound, upper_bound):
+    return int(floor((lower_bound + upper_bound) / 2))
 
 
 class NumberGuesser:
@@ -11,92 +16,77 @@ class NumberGuesser:
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
 
-    def guess(self):
-        return int(floor((self.lower_bound + self.upper_bound) / 2))
+    # def guess(self):
+    #     return int_middle(self.lower_bound, self.upper_bound)
 
-    def updateBounds(self, lastGuess, answer):
-        if answer == 0:  # answer == guess:
-            debug("Solution found: {}".format(lastGuess))
-            self.lower_bound = lastGuess
-            self.upper_bound = lastGuess
+    def updateBounds(self, curr, prev, bomb_dist):
+        debug(f"curr bounds: {self.lower_bound}-{self.upper_bound}")
+        debug(curr, prev, bomb_dist)
+
+        if bomb_dist == UNKNOWN:
+            return self.guess_new(curr)
+
+        middle = int_middle(curr, prev)
+        if bomb_dist == SAME:
+            debug("Solution found: {}".format(middle))
+            self.lower_bound = middle
+            self.upper_bound = middle
+
+        dir = curr-prev>0
+        debug(f"dir={dir}, bomb_dist == WARMER:{bomb_dist == WARMER}")
+        if dir == (bomb_dist == WARMER):
+            self.lower_bound = middle
+        else:
+            self.upper_bound = middle
+        debug(f"new bounds: {self.lower_bound}-{self.upper_bound}")
 
         # cheating detection
         if self.lower_bound > self.upper_bound:
             raise AssertionError("You are cheating! (Or I am dumb)")
 
-        if answer < 0:  # answer < guess:
-            self.upper_bound = lastGuess
-        else:  # answer > guess
-            self.lower_bound = lastGuess
+        return self.guess_new(curr)
+
+    def guess_new(self, curr):
+        dist_to_low = abs(curr - self.lower_bound)
+        dist_to_upp = abs(curr - self.upper_bound)
+        return self.lower_bound if dist_to_low >= dist_to_upp else self.upper_bound-1
 
 
-# 0...5 (6) (012 345)
-# my number is 2
-# you guess
-
-# log2(10) = 3.xx ?
-def ORIG_solveByHalving(self):
-    lower_bound = 1
-    upper_bound = 10
-    answer = None
-    debug("I will guess it in max {} turns", ceil(log2(upper_bound - lower_bound + 1)))
-
-    while not answer == 0:
-        guess = int(floor((lower_bound + upper_bound) / 2))
-        answer = 0  # TODO getNewAnswer(guess)
-        if answer == 0:  # answer == guess:
-            # sol found!
-            return guess
-
-        # cheating detection
-        if lower_bound > upper_bound:
-            raise AssertionError("You are cheating! (Or I am dumb)")
-
-        lower_bound = guess
-        if answer < 0:  # answer < guess:
-            upper_bound = guess
-        else:  # answer > guess
-            pass
+def getXGuess(currx, prevx, bomb_direction):
+    # if bomb_direction == UNKNOWN:
+    #     return xGuesser.guess()
+    # if bomb_direction == COLDER:
+    return xGuesser.updateBounds(currx, prevx, bomb_direction)
+    # return xGuesser.guess()
 
 
-def getXGuess(xGuess, bomb_direction):
-    if 'L' in bomb_direction:
-        answer = -1
-    elif 'R' in bomb_direction:
-        answer = 1
-    else:
-        answer = 0
-    xGuesser.updateBounds(xGuess, answer)
-    return xGuesser.guess()
-
-
-def getYGuess(yGuess, bomb_direction):
-    if 'U' in bomb_direction:
-        answer = -1
-    elif 'D' in bomb_direction:
-        answer = 1
-    else:
-        answer = 0
-    yGuesser.updateBounds(yGuess, answer)
-    return yGuesser.guess()
+def getYGuess(curry, prevy, bomb_direction):
+    return yGuesser.updateBounds(curry, prevy, bomb_direction)
+    # return yGuesser.guess()
 
 # W: width of the building.
 # H: height of the building.
 W, H = [int(i) for i in input().split()]
 N = int(input()) # maximum number of turns before game over.
-X0, Y0 = [int(i) for i in input().split()]
+X0, Y0 = [int(i) for i in input().split()]  # Batman start position
 
+debug(W, H, N, X0, Y0)
 debug("I will guess it in max {} turns".format(ceil(log2(max(W,H) - 0 + 1))))
 
 xGuesser = NumberGuesser(W)
-xGuess = X0
+currx = X0
 yGuesser = NumberGuesser(H)
-yGuess = Y0
+curry = Y0
 
+prevx, prevy = X0, Y0
 # game loop
 while 1:
-    bomb_direction = input() # the direction of the bombs from batman's current location (U, UR, R, DR, D, DL, L or UL)
+    bomb_dir = input()  # Current distance to the bomb compared to previous distance (COLDER, WARMER, SAME or UNKNOWN)
 
-    xGuess = getXGuess(xGuess, bomb_direction)
-    yGuess = getYGuess(yGuess, bomb_direction)
-    print(str(xGuess) + " " + str(yGuess)) # the location of the next window Batman should jump to.
+    new_currx = getXGuess(currx, prevx, bomb_dir)
+    new_curry = getYGuess(curry, prevy, bomb_dir)
+    if bomb_dir != UNKNOWN:
+        prevx, prevy = currx, curry
+    currx, curry = new_currx, new_curry
+    print(str(currx) + " " + str(curry)) # the location of the next window Batman should jump to.
+
