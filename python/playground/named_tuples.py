@@ -30,3 +30,22 @@ print(ed)
 # print(ed[1])  #error!
 print(ed.id)
 
+
+from types import SimpleNamespace
+
+edd = SimpleNamespace(firstname="Edgar", lastname="Wright")
+print(edd.firstname)  # no IDE help here :-(
+print(edd.lastname)
+print(edd)
+print([edd])
+
+@dataclass
+class Person:
+    firstname: str
+    lastname: str
+
+p = Person("Edgar", lastname="Wright")
+print(p.firstname)  #IDE help here :-)
+print(p.lastname)
+print(p)
+print([p])
