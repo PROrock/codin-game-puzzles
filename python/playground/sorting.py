@@ -48,6 +48,7 @@ print(sorted(node_named))
 
 print(sorted(node_named, key=lambda n:n[1]))  # sort by history
 print(sorted(node_named, key=itemgetter(1)))  # sort by history
+print(sorted(node_named, key=lambda n:n.history))  # sort by history, has reference to the field!
 print(sorted(node_named, key=attrgetter("history")))  # sort by history
 print("double sort:")
 print(sorted(node_named, key=itemgetter(1, 2)))  # sort by history, then action name
