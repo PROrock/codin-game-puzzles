@@ -10,11 +10,13 @@ seed
 --
 33:125  # grow if you can, keep both
 35:119  # grow if you can, chop if you can
-103:106 # grow if you can, chop if you can, cut down everything on the last day
-102,1:102,6 # grow if you can (prefer rich soil), chop if you can, cut down everything on the last day
+103:106 # grow if you can, seed if you can, cut down everything on the last day
+102,1:102,6 # grow if you can (prefer rich soil), seed if you can, cut down everything on the last day
 111:102 # + only grow if the tree is not dormant
 116:97 # + only seed if the tree is not dormant
-beaten bronze, onto Silver!
+123:100 # + only have max 6 trees, then cut
+114:101 # + only have max 7 trees, then cut
+127:104 # + only have max 7 trees of size 1+, then cut
 
 
 time spent: 

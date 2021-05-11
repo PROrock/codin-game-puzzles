@@ -5,6 +5,7 @@ import sys
 MAX_DAY = 23
 MAX_SIZE = 3
 COSTS = (0, 1, 3, 7)
+MAX_TREES_HEUR = 7
 
 
 def debug(text):
@@ -30,14 +31,22 @@ trees = {}
 
 
 def grow_cost(my_trees, target_size):
-    return COSTS[target_size] + len(t for t in my_trees if t.size == target_size)
+    return COSTS[target_size] + len([t for t in my_trees if t.size == target_size])
+
+def cut(my_trees):
+    my_big_trees = [t for t in my_trees if t.size == MAX_SIZE]
+    if sun >= 4 and my_big_trees:
+        best_tree = sorted(my_big_trees, key=lambda t:cells[t.id].richness, reverse=True)[0].id
+        return f"COMPLETE {best_tree}"
+    return None
+
 
 def best_action():
     # GROW cellIdx | SEED sourceIdx targetIdx | COMPLETE cellIdx | WAIT <message>
     my_trees = [t for t in trees.values() if t.is_mine]
 
     # if it's not the last day, invest in the future
-    if day < MAX_DAY:
+    if day < MAX_DAY and len([t for t in my_trees if t.size > 0]) <= MAX_TREES_HEUR:
         # grow the tree, if there is any
         for t in my_trees:
             if t.size < MAX_SIZE and not t.is_dormant:
@@ -56,12 +65,11 @@ def best_action():
             return f"SEED {best_seed_tree.id} {best_seed.id}"
 
     # cut down, if you can (called more or less only on last day)
-    my_big_trees = [t for t in my_trees if t.size == MAX_SIZE]
-    if sun >= 4 and my_big_trees:
-        best_tree = sorted(my_big_trees, key=lambda t:cells[t.id].richness, reverse=True)[0].id
-        return f"COMPLETE {best_tree}"
-    else:
-        return "WAIT"
+    action = cut(my_trees)
+    if action:
+        return action
+
+    return "WAIT"
 
 
 
