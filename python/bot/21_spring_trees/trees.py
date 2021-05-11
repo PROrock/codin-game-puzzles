@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass
 
 import sys
@@ -5,7 +6,10 @@ import sys
 MAX_DAY = 23
 MAX_SIZE = 3
 COSTS = (0, 1, 3, 7)
+CUT_COST = 4
 MAX_TREES_HEUR = 7
+MIN_TREES_HEUR = 10
+MAX_SEEDS_HEUR = 3
 
 
 def debug(text):
@@ -30,12 +34,14 @@ cells = {}
 trees = {}
 
 
-def grow_cost(my_trees, target_size):
+def grow_cost(target_size):
     return COSTS[target_size] + len([t for t in my_trees if t.size == target_size])
 
-def cut(my_trees):
-    my_big_trees = [t for t in my_trees if t.size == MAX_SIZE]
-    if sun >= 4 and my_big_trees:
+def cut():
+    i_can_cut = sun >= CUT_COST and counter[3] > 0
+    i_want_cut = counter[1] + counter[2] + counter[3] > MIN_TREES_HEUR or day >= MAX_DAY-1
+    if i_can_cut and i_want_cut:
+        my_big_trees = [t for t in my_trees if t.size == MAX_SIZE]
         best_tree = sorted(my_big_trees, key=lambda t:cells[t.id].richness, reverse=True)[0].id
         return f"COMPLETE {best_tree}"
     return None
@@ -43,31 +49,35 @@ def cut(my_trees):
 
 def best_action():
     # GROW cellIdx | SEED sourceIdx targetIdx | COMPLETE cellIdx | WAIT <message>
-    my_trees = [t for t in trees.values() if t.is_mine]
+    # total_cut_cost = counter[3]*CUT_COST
 
-    # if it's not the last day, invest in the future
-    if day < MAX_DAY and len([t for t in my_trees if t.size > 0]) <= MAX_TREES_HEUR:
-        # grow the tree, if there is any
-        for t in my_trees:
-            if t.size < MAX_SIZE and not t.is_dormant:
-                # cost = grow_cost(my_trees, t.size+1)
-                return f"GROW {t.id}"
-
-        # plant seed if you can
-        # cost = grow_cost(my_trees, 0)
-        all_plantable_cells = [(t, cells[n])
-                               for t in my_trees
-                               if not t.is_dormant
-                               for n in cells[t.id].neighs
-                               if n and cells[n].richness > 0 and n not in trees.keys()]
-        if all_plantable_cells:
-            best_seed_tree, best_seed = sorted(all_plantable_cells, key=lambda tup: tup[1].richness, reverse=True)[0]
-            return f"SEED {best_seed_tree.id} {best_seed.id}"
-
-    # cut down, if you can (called more or less only on last day)
-    action = cut(my_trees)
+    # cut down, if you can
+    action = cut()
     if action:
         return action
+
+    # if it's not the last day, invest in the future
+    if day < MAX_DAY: # and counter[1] + counter[2] + counter[3] <= MAX_TREES_HEUR:
+        # grow the tree, if there is any
+        # todo grow tree on richest soil?
+        for t in my_trees:
+            if t.size < MAX_SIZE and not t.is_dormant:
+                cost = grow_cost(t.size+1)
+                if sun >= cost:
+                    return f"GROW {t.id}"
+
+        # plant seed if you can
+        # todo shoot seed also further away from the tree if richer soil
+        cost = grow_cost(0)
+        if sun >= cost: # and counter[0] < MAX_SEEDS_HEUR:
+            all_plantable_cells = [(t, cells[n])
+                                   for t in my_trees
+                                   if not t.is_dormant
+                                   for n in cells[t.id].neighs
+                                   if n and cells[n].richness > 0 and n not in trees.keys()]
+            if all_plantable_cells:
+                best_seed_tree, best_seed = sorted(all_plantable_cells, key=lambda tup: tup[1].richness, reverse=True)[0]
+                return f"SEED {best_seed_tree.id} {best_seed.id}"
 
     return "WAIT"
 
@@ -107,6 +117,9 @@ while True:
     number_of_possible_actions = int(input())  # all legal actions
     for i in range(number_of_possible_actions):
         possible_action = input()  # try printing something from here to start with
+
+    my_trees = [t for t in trees.values() if t.is_mine]
+    counter = Counter([t.size for t in my_trees])
 
     action = best_action()
     print(action)

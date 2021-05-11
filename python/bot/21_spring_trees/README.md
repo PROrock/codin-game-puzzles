@@ -18,8 +18,12 @@ seed
 114:101 # + only have max 7 trees, then cut
 127:104 # + only have max 7 trees of size 1+, then cut
 
+vs. SIHUSIA
+105:136 cut when more than 9 trees
+104:135 cut when more than 10 trees
+
 
 time spent: 
 15min? for wood alg
 1h30m 2000 to 2130 for heur for bronze (plant, ignore shadow)
-10mins 22:30 to 22:40 for the same 
+2h 22:30 to 00:30 for the same, finally in silver! 
