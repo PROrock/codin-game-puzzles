@@ -3,8 +3,8 @@ from dataclasses import dataclass
 import sys
 
 MAX_DAY = 23
-
 MAX_SIZE = 3
+COSTS = (0, 1, 3, 7)
 
 
 def debug(text):
@@ -29,6 +29,9 @@ cells = {}
 trees = {}
 
 
+def grow_cost(my_trees, target_size):
+    return COSTS[target_size] + len(t for t in my_trees if t.size == target_size)
+
 def best_action():
     # GROW cellIdx | SEED sourceIdx targetIdx | COMPLETE cellIdx | WAIT <message>
     my_trees = [t for t in trees.values() if t.is_mine]
@@ -37,11 +40,15 @@ def best_action():
     if day < MAX_DAY:
         # grow the tree, if there is any
         for t in my_trees:
-            if t.size < MAX_SIZE:
+            if t.size < MAX_SIZE and not t.is_dormant:
+                # cost = grow_cost(my_trees, t.size+1)
                 return f"GROW {t.id}"
+
         # plant seed if you can
+        # cost = grow_cost(my_trees, 0)
         all_plantable_cells = [(t, cells[n])
                                for t in my_trees
+                               if not t.is_dormant
                                for n in cells[t.id].neighs
                                if n and cells[n].richness > 0 and n not in trees.keys()]
         if all_plantable_cells:
