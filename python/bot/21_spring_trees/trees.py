@@ -40,10 +40,13 @@ def best_action():
             if t.size < MAX_SIZE:
                 return f"GROW {t.id}"
         # plant seed if you can
-        for t in my_trees:
-            for n in cells[t.id].neighs:
-                if n and cells[n].richness > 0 and n not in trees.keys():
-                    return f"SEED {t.id} {n}"
+        all_plantable_cells = [(t, cells[n])
+                               for t in my_trees
+                               for n in cells[t.id].neighs
+                               if n and cells[n].richness > 0 and n not in trees.keys()]
+        if all_plantable_cells:
+            best_seed_tree, best_seed = sorted(all_plantable_cells, key=lambda tup: tup[1].richness, reverse=True)[0]
+            return f"SEED {best_seed_tree.id} {best_seed.id}"
 
     # cut down, if you can (called more or less only on last day)
     my_big_trees = [t for t in my_trees if t.size == MAX_SIZE]
