@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 import sys
 
+MAX_DAY = 23
+
 MAX_SIZE = 3
 
 
@@ -31,14 +33,22 @@ def best_action():
     # GROW cellIdx | SEED sourceIdx targetIdx | COMPLETE cellIdx | WAIT <message>
     my_trees = [t for t in trees.values() if t.is_mine]
 
-    # grow the tree, if there is any
-    for t in my_trees:
-        if t.size < MAX_SIZE:
-            return f"GROW {t.id}"
+    # if it's not the last day, invest in the future
+    if day < MAX_DAY:
+        # grow the tree, if there is any
+        for t in my_trees:
+            if t.size < MAX_SIZE:
+                return f"GROW {t.id}"
+        # plant seed if you can
+        for t in my_trees:
+            for n in cells[t.id].neighs:
+                if n and cells[n].richness > 0 and n not in trees.keys():
+                    return f"SEED {t.id} {n}"
 
-    # cut down, if you can
-    if sun >= 4:
-        best_tree = sorted(my_trees, key=lambda t:cells[t.id].richness, reverse=True)[0].id
+    # cut down, if you can (called more or less only on last day)
+    my_big_trees = [t for t in my_trees if t.size == MAX_SIZE]
+    if sun >= 4 and my_big_trees:
+        best_tree = sorted(my_big_trees, key=lambda t:cells[t.id].richness, reverse=True)[0].id
         return f"COMPLETE {best_tree}"
     else:
         return "WAIT"
@@ -55,7 +65,7 @@ for i in range(number_of_cells):
 
 # game loop
 while True:
-    best_tree = None
+    trees = {}
 
     day = int(input())  # the game lasts 24 days: 0-23
     nutrients = int(input())  # the base score you gain from the next COMPLETE action
