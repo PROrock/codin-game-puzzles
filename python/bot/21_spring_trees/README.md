@@ -37,4 +37,4 @@ time spent:
 1h30m 2000 to 2130 for heur for bronze (plant, ignore shadow)
 2h 22:30 to 00:30 for the same, finally in silver! 
 We
- 1950 - 
+1h45m 1950 - 2135 - small improvements - seed shooting to dist 2 and more

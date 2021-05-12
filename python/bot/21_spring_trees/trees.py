@@ -165,5 +165,5 @@ while True:
     counter = Counter([t.size for t in my_trees])
 
     action = best_action()
-    print(action)
+    print(action + f" {my_cum} {opp_cum}")
 
