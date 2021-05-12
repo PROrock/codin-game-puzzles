@@ -15,7 +15,7 @@ MAX_SEEDS_HEUR = 3
 
 
 def debug(*text):
-    print(text, file=sys.stderr, flush=True)
+    print(*text, file=sys.stderr, flush=True)
 
 
 @dataclass(frozen=True)
@@ -34,6 +34,8 @@ class Cell:
 
 cells = {}
 trees = {}
+my_cum = 0
+opp_cum = 0
 
 
 def grow_cost(target_size):
@@ -62,22 +64,25 @@ def cut():
     #                 if n.richness > 0 and id not in trees.keys():
     #                     yield t, n
 
-def seed_place(tree, cell, depth, result: set):
+def seed_place(tree, cell, depth, result: set, cells_neighbouring_trees):
     if depth <= 0:
         return result
     for n in cell.neighs:
         if n:
             c = cells[n]
-            if c.richness > 0 and n not in trees.keys():
+            # skip seeds neighbouring with my trees as heuristic
+            # if c.richness > 0 and n not in trees.keys() and n not in cells[tree.id].neighs:
+            if c.richness > 0 and n not in trees.keys() and n not in cells_neighbouring_trees:
                 result.add((tree, c))
-            seed_place(tree, c, depth - 1, result)
+            seed_place(tree, c, depth - 1, result, cells_neighbouring_trees)
     return result
 
 def generate_plantable_tuples():
+    cells_neighbouring_trees = {n for t in my_trees for n in cells[t.id].neighs}
     for t in my_trees:
         if t.size > 0 and not t.is_dormant:
             tree_cell = cells[t.id]
-            seed_tuples = seed_place(t, tree_cell, t.size, set())
+            seed_tuples = seed_place(t, tree_cell, t.size, set(), cells_neighbouring_trees)
             for seed_tuple in seed_tuples:
                 yield seed_tuple
 
@@ -104,6 +109,7 @@ def best_action():
         cost = grow_cost(0)
         if sun >= cost: # and counter[0] < MAX_SEEDS_HEUR:
             all_plantable_cells = list(generate_plantable_tuples())
+            debug(len(all_plantable_cells), [(tt.id, cc.id) for tt, cc in all_plantable_cells])
             if all_plantable_cells:
                 best_seed_tree, best_seed = sorted(all_plantable_cells, key=lambda tup: tup[1].richness, reverse=True)[0]
                 return f"SEED {best_seed_tree.id} {best_seed.id}"
@@ -120,6 +126,7 @@ for i in range(number_of_cells):
     index, richness, *neighs = [int(j) for j in input().split()]
     cells[index] = Cell(index, richness, tuple(None if n == -1 else n for n in neighs))
 
+prev_day = -1
 # game loop
 while True:
     trees = {}
@@ -146,6 +153,13 @@ while True:
     number_of_possible_actions = int(input())  # all legal actions
     for i in range(number_of_possible_actions):
         possible_action = input()  # try printing something from here to start with
+
+    if day != prev_day:
+        prev_day = day
+        my_cum += sun
+        opp_cum += opp_sun
+        debug(day)
+    debug(day, my_cum, opp_cum)
 
     my_trees = [t for t in trees.values() if t.is_mine]
     counter = Counter([t.size for t in my_trees])

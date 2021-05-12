@@ -28,7 +28,8 @@ seed=0
 75:151 + seed only if tree size is 1+
 76:151 + seed can also go many cells from tree in one dir
 77:159 + seed can also go many cells from tree in the area
-
+97:148 + seed only not neighbouring the original tree (can neigh others) (202:249)
+88:143 + seed only not neighbouring any tree of mine (270:235 cum sun sum)
 
 
 time spent: 
