@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 import sys
 
+N_DIRS = 6
+
 MAX_DAY = 23
 MAX_SIZE = 3
 COSTS = (0, 1, 3, 7)
@@ -12,8 +14,8 @@ MIN_TREES_HEUR = 10
 MAX_SEEDS_HEUR = 3
 
 
-def debug(text):
-    print(text, file=sys.stderr,flush=True)
+def debug(*text):
+    print(text, file=sys.stderr, flush=True)
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,38 @@ def cut():
         return f"COMPLETE {best_tree}"
     return None
 
+    # good algo for shadows, which are straight, bad for seeds
+    # for t in my_trees:
+    #     if t.size > 0 and not t.is_dormant:
+    #         tree_cell = cells[t.id]
+    #         for dir in range(N_DIRS):
+    #             n = tree_cell
+    #             for _ in range(t.size):
+    #                 id = n.neighs[dir]
+    #                 if not id:
+    #                     break
+    #                 n = cells[id]
+    #                 if n.richness > 0 and id not in trees.keys():
+    #                     yield t, n
+
+def seed_place(tree, cell, depth, result: set):
+    if depth <= 0:
+        return result
+    for n in cell.neighs:
+        if n:
+            c = cells[n]
+            if c.richness > 0 and n not in trees.keys():
+                result.add((tree, c))
+            seed_place(tree, c, depth - 1, result)
+    return result
+
+def generate_plantable_tuples():
+    for t in my_trees:
+        if t.size > 0 and not t.is_dormant:
+            tree_cell = cells[t.id]
+            seed_tuples = seed_place(t, tree_cell, t.size, set())
+            for seed_tuple in seed_tuples:
+                yield seed_tuple
 
 def best_action():
     # GROW cellIdx | SEED sourceIdx targetIdx | COMPLETE cellIdx | WAIT <message>
@@ -67,14 +101,9 @@ def best_action():
                     return f"GROW {t.id}"
 
         # plant seed if you can
-        # todo shoot seed also further away from the tree if richer soil
         cost = grow_cost(0)
         if sun >= cost: # and counter[0] < MAX_SEEDS_HEUR:
-            all_plantable_cells = [(t, cells[n])
-                                   for t in my_trees
-                                   if not t.is_dormant
-                                   for n in cells[t.id].neighs
-                                   if n and cells[n].richness > 0 and n not in trees.keys()]
+            all_plantable_cells = list(generate_plantable_tuples())
             if all_plantable_cells:
                 best_seed_tree, best_seed = sorted(all_plantable_cells, key=lambda tup: tup[1].richness, reverse=True)[0]
                 return f"SEED {best_seed_tree.id} {best_seed.id}"

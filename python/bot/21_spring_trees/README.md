@@ -22,8 +22,18 @@ vs. SIHUSIA
 105:136 cut when more than 9 trees
 104:135 cut when more than 10 trees
 
+vs. Bossoot
+seed=0
+68:167 cut when more than 10 trees
+75:151 + seed only if tree size is 1+
+76:151 + seed can also go many cells from tree in one dir
+77:159 + seed can also go many cells from tree in the area
+
+
 
 time spent: 
 15min? for wood alg
 1h30m 2000 to 2130 for heur for bronze (plant, ignore shadow)
 2h 22:30 to 00:30 for the same, finally in silver! 
+We
+ 1950 - 
