@@ -2,6 +2,12 @@
 
 ideas:
 mozna slots na dataclasses
+when growing prefer richer soil
+when growing prefer seeds to generate more sun
+when growing calculate what actions/growing to do to grow (or grow+seed) the most trees?
+don't spent a lot of sun on growing every tree to size 3 - it costs fortune and it's not a good strategy
+cut down trees sooner than on last round, cut during the game
+don't grow and seed in the last turns (that much?)
 
 catboss
 seed
