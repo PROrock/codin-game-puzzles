@@ -11,6 +11,7 @@ COSTS = (0, 1, 3, 7)
 CUT_COST = 4
 MAX_TREES_HEUR = 7
 MIN_TREES_HEUR = 10
+MIN_TREES_3_HEUR = 4
 MAX_SEEDS_HEUR = 3
 
 
@@ -43,7 +44,7 @@ def grow_cost(target_size):
 
 def cut():
     i_can_cut = sun >= CUT_COST and counter[3] > 0
-    i_want_cut = counter[1] + counter[2] + counter[3] > MIN_TREES_HEUR or day >= MAX_DAY-1
+    i_want_cut = counter[3] > MIN_TREES_3_HEUR or counter[1] + counter[2] + counter[3] > MIN_TREES_HEUR or day >= MAX_DAY-1
     if i_can_cut and i_want_cut:
         my_big_trees = [t for t in my_trees if t.size == MAX_SIZE]
         best_tree = sorted(my_big_trees, key=lambda t:cells[t.id].richness, reverse=True)[0].id
