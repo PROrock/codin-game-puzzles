@@ -8,6 +8,7 @@ when growing calculate what actions/growing to do to grow (or grow+seed) the mos
 don't spent a lot of sun on growing every tree to size 3 - it costs fortune and it's not a good strategy
 cut down trees sooner than on last round, cut during the game
 don't grow and seed in the last turns (that much?)
+seed in dist 2 but not in a straight line if possible - as Bossoot does
 
 catboss
 seed
@@ -36,6 +37,8 @@ seed=0
 77:159 + seed can also go many cells from tree in the area
 97:148 + seed only not neighbouring the original tree (can neigh others) (202:249)
 88:143 + seed only not neighbouring any tree of mine (270:235 cum sun sum)
+93:143 + don't seed on last 3 turns
+83:153 when growing select the cheapest grow action (reverted)
 
 
 time spent: 
@@ -44,3 +47,6 @@ time spent:
 2h 22:30 to 00:30 for the same, finally in silver! 
 We
 1h45m 1950 - 2135 - small improvements - seed shooting to dist 2 and more
+Fri
+1h 2230 - 2330 - minimal improvements, more bug fixing
+

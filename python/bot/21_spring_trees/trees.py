@@ -98,16 +98,20 @@ def best_action():
     # if it's not the last day, invest in the future
     if day < MAX_DAY: # and counter[1] + counter[2] + counter[3] <= MAX_TREES_HEUR:
         # grow the tree, if there is any
-        # todo grow tree on richest soil?
-        for t in my_trees:
-            if t.size < MAX_SIZE and not t.is_dormant:
-                cost = grow_cost(t.size+1)
-                if sun >= cost:
-                    return f"GROW {t.id}"
+        grow_tuples = [(t, grow_cost(t.size+1)) for t in my_trees if t.size < MAX_SIZE and not t.is_dormant]
+        if grow_tuples:
+            for min_t, min_cost in grow_tuples:
+                if sun >= min_cost:
+                    return f"GROW {min_t.id}"
+            # prefer cheapest grow - works, but worse results
+            # min_t, min_cost = min(grow_tuples, key=operator.itemgetter(1))
+            # if sun >= min_cost:
+            #     return f"GROW {min_t.id}"
+
 
         # plant seed if you can
         cost = grow_cost(0)
-        if sun >= cost: # and counter[0] < MAX_SEEDS_HEUR:
+        if sun >= cost and day < MAX_DAY - 2: # and counter[0] < MAX_SEEDS_HEUR:
             all_plantable_cells = list(generate_plantable_tuples())
             debug(len(all_plantable_cells), [(tt.id, cc.id) for tt, cc in all_plantable_cells])
             if all_plantable_cells:
@@ -127,6 +131,8 @@ for i in range(number_of_cells):
     cells[index] = Cell(index, richness, tuple(None if n == -1 else n for n in neighs))
 
 prev_day = -1
+prev_sun = 0
+prev_opp_sun = 0
 # game loop
 while True:
     trees = {}
@@ -156,10 +162,14 @@ while True:
 
     if day != prev_day:
         prev_day = day
-        my_cum += sun
-        opp_cum += opp_sun
+        my_cum += sun - prev_sun
+        # not precise as prev_opp_sun can be bigger if opp played longer than I prev turn
+        # can be solved by computing the sun income from the board (would have to compute spookiness)
+        opp_cum += opp_sun - prev_opp_sun
         debug(day)
     debug(day, my_cum, opp_cum)
+    prev_sun = sun
+    prev_opp_sun = opp_sun
 
     my_trees = [t for t in trees.values() if t.is_mine]
     counter = Counter([t.size for t in my_trees])
