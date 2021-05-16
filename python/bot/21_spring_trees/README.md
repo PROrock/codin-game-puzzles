@@ -8,8 +8,9 @@ when growing calculate what actions/growing to do to grow (or grow+seed) the mos
 don't spent a lot of sun on growing every tree to size 3 - it costs fortune and it's not a good strategy
 cut down trees sooner than on last round, cut during the game
 don't grow and seed in the last turns (that much?)
-!seed in dist 2 but not in a straight line if possible - as Bossoot does
+!!seed in dist 2 but not in a straight line if possible - as Bossoot does
 brutal cut during second round before last instead of last - not efficient against Bossoot (but might against player bots)
+debug stats for counter of size - mine and hers (+ sum of tree sizes +1)
 
 catboss
 seed
