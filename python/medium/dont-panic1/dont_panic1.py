@@ -18,7 +18,7 @@ def signum(x):
 # nbTotalClones: number of generated clones
 # nbAdditionalElevators: ignore (always zero)
 # nbElevators: number of elevators
-targetPoss = []
+m={}
 
 nbFloors, width, nbRounds, exitFloor, exitPos, nbTotalClones, nbAdditionalElevators, nbElevators = [int(i) for i in
                                                                                                     input().split()]
@@ -26,8 +26,8 @@ for i in range(nbElevators):
     # elevatorFloor: floor on which this elevator is found
     # elevatorPos: position of the elevator on its floor
     elevatorFloor, elevatorPos = [int(j) for j in input().split()]
-    targetPoss.append(elevatorPos)
-targetPoss.append(exitPos)
+    m[elevatorFloor]=elevatorPos
+m[exitFloor]=exitPos
 
 # game loop
 while 1:
@@ -39,8 +39,13 @@ while 1:
     clonePos = int(clonePos)
     dir = -1 if direction == "LEFT" else 1
 
-    # todo iterate targetPoss
-    targetPos = exitPos if cloneFloor == exitFloor else elevatorPos
+    debug(m)
+    debug(cloneFloor)
+    if cloneFloor == -1: # no leading clone yet -> wait
+        print("WAIT")
+        continue
+
+    targetPos = m[cloneFloor]
     targetDir = targetPos - clonePos
     action = "WAIT" if signum(targetDir) == signum(dir) or targetDir == 0 else "BLOCK"
 
