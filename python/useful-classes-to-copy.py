@@ -1,5 +1,8 @@
 import math
 
+
+# todo create dataclass impl (might be faster?)
+# todo consider writing a namedtuple implementation - it enables nice tricks `v[0]` and might be faster
 class Point:
     """Immutable 2D point"""
     def __init__(self, x, y):
@@ -27,6 +30,8 @@ class Point:
     def __mul__(self, multiplier):
         return Point(self.x * multiplier, self.y * multiplier)
 
+# todo create dataclass impl (might be faster?)
+# todo consider writing a namedtuple implementation - it enables nice tricks `v[0]` and might be faster
 class Vect:
     """Immutable 2D vector"""
     def __init__(self, x, y):
@@ -42,6 +47,11 @@ class Vect:
         return abs(self.x) + abs(self.y)
 
     def l2_norm(self):
+        """
+        XXX: Consider using math.hypot(*coordinates) or math.dist(p, q), which is probably faster.
+        See https://docs.python.org/3/library/math.html#math.dist
+        For timing guide, see https://stackoverflow.com/a/24105845/2127340
+        """
         return math.sqrt(self.x**2 + self.y**2)
 
     def l_inf_norm(self):
@@ -97,4 +107,6 @@ class Line:
                or t[1] is None and point.y == self.point1.y \
                or t[0] == t[1]
 
-
+# todo create a Graph object? for start you can see python/medium/the-lost-files/main.py
+# todo create a Tree object? potentially with search functions?
+# todo create few GENERAL! algorithms/strategies like A*,MinMax,...
