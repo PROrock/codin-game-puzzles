@@ -29,6 +29,8 @@ class Point:
         return Point((self.x - other_point.x), (self.y-other_point.y))
     def __mul__(self, multiplier):
         return Point(self.x * multiplier, self.y * multiplier)
+    # right multiplication to support 2 * p
+    __rmul__ = __mul__
 
 # todo create dataclass impl (might be faster?)
 # todo consider writing a namedtuple implementation - it enables nice tricks `v[0]` and might be faster
@@ -83,6 +85,8 @@ class Vect:
         return Vect((self.x - other.x), (self.y - other.y))
     def __mul__(self, multiplier):
         return Vect(self.x * multiplier, self.y * multiplier)
+    # right multiplication to support 2 * p
+    __rmul__ = __mul__
 
 class Line:
     def __init__(self, point1, point2):

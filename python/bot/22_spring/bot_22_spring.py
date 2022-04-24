@@ -45,6 +45,8 @@ class Point:
         return Point((self.x - other_point.x), (self.y-other_point.y))
     def __mul__(self, multiplier):
         return Point(self.x * multiplier, self.y * multiplier)
+    # right multiplication to support 2 * p
+    __rmul__ = __mul__
 
 @dataclasses.dataclass(frozen=True)
 class Entity:
@@ -87,15 +89,15 @@ while True:
     entities = []
     for i in range(2):
         # health: Your base health
-        # mana: Ignore in the first league; Spend ten mana to cast a spell
+        # mana: Spend ten mana to cast a spell
         health, mana = [int(j) for j in input().split()]
     entity_count = int(input())  # Amount of heros and monsters you can see
     for i in range(entity_count):
         # _id: Unique identifier
         # _type: 0=monster, 1=your hero, 2=opponent hero
         # x: Position of this entity
-        # shield_life: Ignore for this league; Count down until shield spell fades
-        # is_controlled: Ignore for this league; Equals 1 when this entity is under a control spell
+        # shield_life: Count down until shield spell fades
+        # is_controlled: Equals 1 when this entity is under a control spell
         # health: Remaining health of this monster
         # vx: Trajectory of this monster
         # near_base: 0=monster with no target yet, 1=monster targeting a base
@@ -120,4 +122,7 @@ while True:
             # In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
             print(f"MOVE {target_p.x} {target_p.y}")
         else:
-            print("WAIT Boring!")
+            # todo not so far
+            # todo ideally disperse!
+            target_p = 2 * hero.p - base_p
+            print(f"MOVE {target_p.x} {target_p.y} away from base")
