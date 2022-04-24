@@ -12,16 +12,22 @@ DAMAGE_RADIUS = 300
 MONSTER_SPEED = 400
 HERO_SPEED = 800
 WANDER_THRES = 6000+2200
+WIND_CAST_RANGE = 1280
+SPELL_COST = 10
 
 
 def debug(*texts):
-    print(texts, file=sys.stderr, flush=True)
+    print(*texts, file=sys.stderr, flush=True)
 
 
 class Action:
     @staticmethod
     def move(point, text=""):
         return f"MOVE {point.x} {point.y} " + text
+
+    @staticmethod
+    def wind(point, text=""):
+        return f"SPELL WIND {point.x} {point.y} " + text
 
 
 # todo create dataclass impl (might be faster?)
@@ -94,6 +100,7 @@ class Monster(Entity):
     near_base: bool
     threat_for: int
     turns_to_base: int
+    winded: bool = False
 
     @staticmethod
     def create(_id, _type, x, y, shield_life, is_controlled, health, vx, vy, near_base, threat_for):
@@ -112,26 +119,24 @@ base_x, base_y = [int(i) for i in input().split()]
 base_p = Point(base_x, base_y)
 heroes_per_player = int(input())  # Always 3
 i_turn = 1
+my_health = my_mana = opp_health = opp_mana = 0
+entities = []
 
 
 def load_inputs():
     global i_turn
-    i_turn += 1
+    global entities
     entities = []
+    i_turn += 1
 
-    for _ in range(2):
-        # health: Your base health
-        # mana: Spend ten mana to cast a spell
-        health, mana = [int(j) for j in input().split()]
-    entity_count = int(input())  # Amount of heros and monsters you can see
+    global my_health, my_mana, opp_health, opp_mana
+    my_health, my_mana = [int(j) for j in input().split()]
+    opp_health, opp_mana = [int(j) for j in input().split()]
+    entity_count = int(input())  # Amount of heroes and monsters you can see
     for _ in range(entity_count):
-        # _id: Unique identifier
         # _type: 0=monster, 1=your hero, 2=opponent hero
-        # x: Position of this entity
-        # shield_life: Count down until shield spell fades
+        # shield_life: Count down until shield spell fades. 0 if no shield
         # is_controlled: Equals 1 when this entity is under a control spell
-        # health: Remaining health of this monster
-        # vx: Trajectory of this monster
         # near_base: 0=monster with no target yet, 1=monster targeting a base
         # threat_for: Given this monster's trajectory, is it a threat to 1=your base, 2=your opponent's base, 0=neither
         _id, _type, x, y, shield_life, is_controlled, health, vx, vy, near_base, threat_for = [int(j) for j in input().split()]
@@ -140,11 +145,10 @@ def load_inputs():
         else:
             entity = Monster.create(_id, _type, x, y, shield_life, is_controlled, health, vx, vy, near_base, threat_for)
         entities.append(entity)
-    return entities
 
 
 def do_best_action():
-    debug(my_heroes)
+    # debug(my_heroes)
     debug([m.p for m in monsters])
 
     for hero in my_heroes:
@@ -153,10 +157,24 @@ def do_best_action():
 
 
 def best_for_one_hero(hero):
+    global my_mana
     if monsters:
         monster = get_nearest_monster(base_p, monsters)
+        debug(monster)
         debug(monster.turns_to_base)
-        target_p = monster.p
+
+        if (monster.turns_to_base == 1 and monster.shield_life == 0
+                and monster.p.l2_dist(hero.p) < WIND_CAST_RANGE and my_mana >= SPELL_COST and not monster.winded):
+            target_p = 2 * hero.p - base_p
+            my_mana -= SPELL_COST
+            # todo you might want to mark all monsters in neighborhood as well
+            monster.winded = True
+            return Action.wind(target_p, f"LH{monster.id}")
+
+        # go to the position where the monster will be - if on that spot, you still hit the monster
+        # - also better trajectory when you are distant from it
+        # - disadvantage - when killing the monster you are closer to the base, while other monsters usually aren't
+        target_p = monster.p + monster.vp
 
         # In the first league: MOVE <x> <y> | WAIT | SPELL <spellParams>
         return Action.move(target_p, f"mon {monster.id}")
@@ -171,7 +189,7 @@ def best_for_one_hero(hero):
 
 # game loop
 while True:
-    entities = load_inputs()
+    load_inputs()
     my_heroes = [e for e in entities if e.type == 1]
     monsters = [e for e in entities if e.type == 0]
 
