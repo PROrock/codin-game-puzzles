@@ -8,7 +8,9 @@ import sys
 # MOVE monster 400, hero 800
 # monsters target base 5000 units/px
 # monster damage base 300 from base
-
+DAMAGE_RADIUS = 300
+MONSTER_SPEED = 400
+HERO_SPEED = 800
 WANDER_THRES = 6000+2200
 
 
@@ -64,7 +66,13 @@ class Point:
     # right multiplication to support 2 * p
     __rmul__ = __mul__
 
-@dataclasses.dataclass(frozen=True)
+
+def get_turns_to_base(point):
+    dist = point.l2_dist(base_p) - DAMAGE_RADIUS
+    return math.ceil(dist / MONSTER_SPEED)
+
+
+@dataclasses.dataclass(frozen=False)
 class Entity:
     id: int
     # todo enum?
@@ -78,16 +86,20 @@ class Entity:
     def create(_id, _type, x, y, shield_life, is_controlled):
         return Entity(_id, _type, Point(x, y), shield_life, bool(is_controlled))
 
-@dataclasses.dataclass(frozen=True)
+
+@dataclasses.dataclass(frozen=False)
 class Monster(Entity):
     health: int
     vp: Point
     near_base: bool
     threat_for: int
+    turns_to_base: int
 
     @staticmethod
     def create(_id, _type, x, y, shield_life, is_controlled, health, vx, vy, near_base, threat_for):
-        return Monster(_id, _type, Point(x, y), shield_life, bool(is_controlled), health, Point(vx, vy), bool(near_base), threat_for)
+        point = Point(x, y)
+        return Monster(_id, _type, point, shield_life, bool(is_controlled), health, Point(vx, vy),
+                       bool(near_base), threat_for, get_turns_to_base(point))
 
 
 def get_nearest_monster(p, monsters):
@@ -143,6 +155,7 @@ def do_best_action():
 def best_for_one_hero(hero):
     if monsters:
         monster = get_nearest_monster(base_p, monsters)
+        debug(monster.turns_to_base)
         target_p = monster.p
 
         # In the first league: MOVE <x> <y> | WAIT | SPELL <spellParams>
