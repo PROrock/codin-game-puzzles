@@ -1,8 +1,10 @@
 import math
 
-
 # todo create dataclass impl (might be faster?)
 # todo consider writing a namedtuple implementation - it enables nice tricks `v[0]` and might be faster
+from math_utils import gcd
+
+
 class Point:
     """Immutable 2D point"""
     def __init__(self, x, y):
@@ -31,6 +33,11 @@ class Point:
         return Point(self.x * multiplier, self.y * multiplier)
     # right multiplication to support 2 * p
     __rmul__ = __mul__
+    def __neg__(self):
+        return Point(-self.x, -self.y)
+    def __round__(self, ndigits=None):
+        return Point(round(self.x, ndigits), round(self.y, ndigits))
+
 
 # todo create dataclass impl (might be faster?)
 # todo consider writing a namedtuple implementation - it enables nice tricks `v[0]` and might be faster
@@ -87,6 +94,11 @@ class Vect:
         return Vect(self.x * multiplier, self.y * multiplier)
     # right multiplication to support 2 * p
     __rmul__ = __mul__
+    def __neg__(self):
+        return Point(-self.x, -self.y)
+    def __round__(self, ndigits=None):
+        return Point(round(self.x, ndigits), round(self.y, ndigits))
+
 
 class Line:
     def __init__(self, point1, point2):

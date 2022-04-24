@@ -8,12 +8,15 @@ import sys
 # MOVE monster 400, hero 800
 # monsters target base 5000 units/px
 # monster damage base 300 from base
-DAMAGE_RADIUS = 300
+MONSTER_TARGET_RADIUS = 5000
+MONSTER_DAMAGE_RADIUS = 300
+HERO_DAMAGE_RADIUS = 800
 MONSTER_SPEED = 400
 HERO_SPEED = 800
-WANDER_THRES = 6000+2200
 WIND_CAST_RANGE = 1280
 SPELL_COST = 10
+HERO_ATTACK = 2
+WANDER_THRES = 6000+2200
 
 
 def debug(*texts):
@@ -46,7 +49,7 @@ class Point:
         """
         return math.sqrt(self.x**2 + self.y**2)
 
-    def l2_dist(self, other):
+    def dist(self, other):
         """
         XXX: Consider using math.hypot(*coordinates) or math.dist(p, q), which is probably faster.
         See https://docs.python.org/3/library/math.html#math.dist
@@ -71,10 +74,17 @@ class Point:
         return Point(self.x * multiplier, self.y * multiplier)
     # right multiplication to support 2 * p
     __rmul__ = __mul__
+    def __neg__(self):
+        return Point(-self.x, -self.y)
+    def __round__(self, ndigits=None):
+        return Point(round(self.x, ndigits), round(self.y, ndigits))
+
+
+ZERO_VECTOR = Point(0, 0)
 
 
 def get_turns_to_base(point):
-    dist = point.l2_dist(base_p) - DAMAGE_RADIUS
+    dist = point.dist(base_p) - MONSTER_DAMAGE_RADIUS
     return math.ceil(dist / MONSTER_SPEED)
 
 
@@ -110,7 +120,7 @@ class Monster(Entity):
 
 
 def get_nearest_monster(p, monsters):
-    min_idx = min(range(len(monsters)), key=lambda i: monsters[i].p.l2_dist(p))
+    min_idx = min(range(len(monsters)), key=lambda i: monsters[i].p.dist(p))
     return monsters[min_idx]
 
 
@@ -148,8 +158,7 @@ def load_inputs():
 
 
 def do_best_action():
-    # debug(my_heroes)
-    debug([m.p for m in monsters])
+    debug("\n".join([str(m) for m in monsters]))
 
     for hero in my_heroes:
         action = best_for_one_hero(hero)
@@ -164,23 +173,30 @@ def best_for_one_hero(hero):
         debug(monster.turns_to_base)
 
         if (monster.turns_to_base == 1 and monster.shield_life == 0
-                and monster.p.l2_dist(hero.p) < WIND_CAST_RANGE and my_mana >= SPELL_COST and not monster.winded):
+                and monster.p.dist(hero.p) < WIND_CAST_RANGE and my_mana >= SPELL_COST and not monster.winded):
             target_p = 2 * hero.p - base_p
             my_mana -= SPELL_COST
             # todo you might want to mark all monsters in neighborhood as well
             monster.winded = True
             return Action.wind(target_p, f"LH{monster.id}")
 
-        # go to the position where the monster will be - if on that spot, you still hit the monster
-        # - also better trajectory when you are distant from it
-        # - disadvantage - when killing the monster you are closer to the base, while other monsters usually aren't
-        target_p = monster.p + monster.vp
+        dist_to_attack = hero.p.dist(monster.p) - HERO_DAMAGE_RADIUS
+        if dist_to_attack > 0:
+            # go to the position where the monster will be - if on that spot, you still hit the monster
+            # - also better trajectory when you are distant from it
+            # - disadvantage - when killing the monster you are closer to the base, while other monsters usually aren't
+            additional_vector = monster.vp
+        elif monster.p.dist(base_p) <= MONSTER_TARGET_RADIUS:
+            additional_vector = round(-1.8 * monster.vp)
+        else:
+            additional_vector = ZERO_VECTOR
+        target_p = monster.p + additional_vector
 
         # In the first league: MOVE <x> <y> | WAIT | SPELL <spellParams>
         return Action.move(target_p, f"mon {monster.id}")
 
     # todo ideally disperse!
-    if hero.p.l2_dist(base_p) > WANDER_THRES - i_turn * 10:
+    if hero.p.dist(base_p) > WANDER_THRES - i_turn * 10:
         return Action.move(base_p, "return closer to base")
     else:
         target_p = 2 * hero.p - base_p
