@@ -35,7 +35,7 @@ class Point:
     __rmul__ = __mul__
     def __neg__(self):
         return Point(-self.x, -self.y)
-    def __round__(self, ndigits=None):
+    def round(self, ndigits=None):
         return Point(round(self.x, ndigits), round(self.y, ndigits))
 
 
@@ -96,7 +96,7 @@ class Vect:
     __rmul__ = __mul__
     def __neg__(self):
         return Point(-self.x, -self.y)
-    def __round__(self, ndigits=None):
+    def round(self, ndigits=None):
         return Point(round(self.x, ndigits), round(self.y, ndigits))
 
 

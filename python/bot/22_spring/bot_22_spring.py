@@ -1,6 +1,7 @@
 import dataclasses
 import math
 import sys
+from typing import List
 
 # unused consts:
 # WIDTH,HEIGHT = X=17630, Y=9000
@@ -76,7 +77,7 @@ class Point:
     __rmul__ = __mul__
     def __neg__(self):
         return Point(-self.x, -self.y)
-    def __round__(self, ndigits=None):
+    def round(self, ndigits=None):
         return Point(round(self.x, ndigits), round(self.y, ndigits))
 
 
@@ -127,7 +128,7 @@ def get_nearest_monster(p, monsters):
 # base_x: The corner of the map representing your base
 base_x, base_y = [int(i) for i in input().split()]
 base_p = Point(base_x, base_y)
-heroes_per_player = int(input())  # Always 3
+int(input())  # Always 3
 i_turn = 1
 my_health = my_mana = opp_health = opp_mana = 0
 entities = []
@@ -166,7 +167,7 @@ def do_best_action():
 
 
 def best_for_one_hero(hero):
-    global my_mana
+    global my_mana, i_turn
     if monsters:
         monster = get_nearest_monster(base_p, monsters)
         debug(monster)
@@ -187,7 +188,7 @@ def best_for_one_hero(hero):
             # - disadvantage - when killing the monster you are closer to the base, while other monsters usually aren't
             additional_vector = monster.vp
         elif monster.p.dist(base_p) <= MONSTER_TARGET_RADIUS:
-            additional_vector = round(-1.8 * monster.vp)
+            additional_vector = (-1.8 * monster.vp).round()
         else:
             additional_vector = ZERO_VECTOR
         target_p = monster.p + additional_vector
@@ -206,7 +207,7 @@ def best_for_one_hero(hero):
 # game loop
 while True:
     load_inputs()
-    my_heroes = [e for e in entities if e.type == 1]
-    monsters = [e for e in entities if e.type == 0]
+    my_heroes: List[Entity] = [e for e in entities if e.type == 1]
+    monsters: List[Monster] = [e for e in entities if e.type == 0]
 
     do_best_action()
