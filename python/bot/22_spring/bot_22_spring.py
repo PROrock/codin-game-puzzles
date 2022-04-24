@@ -2,9 +2,25 @@ import dataclasses
 import math
 import sys
 
+# unused consts:
+# WIDTH,HEIGHT = X=17630, Y=9000
+# ANTIFOG: base 6000, hero 2200
+# MOVE monster 400, hero 800
+# monsters target base 5000 units/px
+# monster damage base 300 from base
+
+WANDER_THRES = 6000+2200
+
 
 def debug(*texts):
     print(texts, file=sys.stderr, flush=True)
+
+
+class Action:
+    @staticmethod
+    def move(point, text=""):
+        return f"MOVE {point.x} {point.y} " + text
+
 
 # todo create dataclass impl (might be faster?)
 # todo consider writing a namedtuple implementation - it enables nice tricks `v[0]` and might be faster
@@ -83,16 +99,20 @@ def get_nearest_monster(p, monsters):
 base_x, base_y = [int(i) for i in input().split()]
 base_p = Point(base_x, base_y)
 heroes_per_player = int(input())  # Always 3
+i_turn = 1
 
-# game loop
-while True:
+
+def load_inputs():
+    global i_turn
+    i_turn += 1
     entities = []
-    for i in range(2):
+
+    for _ in range(2):
         # health: Your base health
         # mana: Spend ten mana to cast a spell
         health, mana = [int(j) for j in input().split()]
     entity_count = int(input())  # Amount of heros and monsters you can see
-    for i in range(entity_count):
+    for _ in range(entity_count):
         # _id: Unique identifier
         # _type: 0=monster, 1=your hero, 2=opponent hero
         # x: Position of this entity
@@ -108,21 +128,38 @@ while True:
         else:
             entity = Monster.create(_id, _type, x, y, shield_life, is_controlled, health, vx, vy, near_base, threat_for)
         entities.append(entity)
+    return entities
 
+
+def do_best_action():
+    debug(my_heroes)
+    debug([m.p for m in monsters])
+
+    for hero in my_heroes:
+        action = best_for_one_hero(hero)
+        print(action)
+
+
+def best_for_one_hero(hero):
+    if monsters:
+        monster = get_nearest_monster(base_p, monsters)
+        target_p = monster.p
+
+        # In the first league: MOVE <x> <y> | WAIT | SPELL <spellParams>
+        return Action.move(target_p, f"mon {monster.id}")
+
+    # todo ideally disperse!
+    if hero.p.l2_dist(base_p) > WANDER_THRES - i_turn * 10:
+        return Action.move(base_p, "return closer to base")
+    else:
+        target_p = 2 * hero.p - base_p
+        return Action.move(target_p, "away from base")
+
+
+# game loop
+while True:
+    entities = load_inputs()
     my_heroes = [e for e in entities if e.type == 1]
     monsters = [e for e in entities if e.type == 0]
 
-    debug(my_heroes)
-    debug([m.p for m in monsters])
-    for hero in my_heroes:
-        if monsters:
-            monster = get_nearest_monster(base_p, monsters)
-            target_p = monster.p
-
-            # In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-            print(f"MOVE {target_p.x} {target_p.y}")
-        else:
-            # todo not so far
-            # todo ideally disperse!
-            target_p = 2 * hero.p - base_p
-            print(f"MOVE {target_p.x} {target_p.y} away from base")
+    do_best_action()
