@@ -1,10 +1,9 @@
 import dataclasses
 import math
+import random
 import sys
 from typing import List
 
-# unused consts:
-# ANTIFOG: base 6000, hero 2200
 WIDTH, HEIGHT = 17630, 9000
 MONSTER_TARGET_RADIUS = 5000
 MONSTER_DAMAGE_RADIUS = 300
@@ -14,10 +13,20 @@ HERO_SPEED = 800
 WIND_CAST_RANGE = 1280
 SPELL_COST = 10
 HERO_ATTACK = 2
-WANDER_THRES = 6000+2200
 HERO_FOG = 2200
+BASE_FOG = 6000
+
+WANDER_THRES = 6000+2200
 CLOSE_DIST_TO_PURSUE = 2200
 CLOSE_DIST_TO_WANDER = HEIGHT//2 - HERO_FOG - MONSTER_SPEED  # -MONSTER_SPEED just not to be to on the edge
+TURNS_TO_HARASS = 100
+MIN_MANA_TO_HARASS = 6 * SPELL_COST
+MIN_HEALTH_TO_CONTROL = 5
+MIN_HEALTH_TO_SHIELD = 3
+DIST_TO_CLOSE_HARASS = BASE_FOG + 1
+DIST_TO_GET_EVEN_CLOSER_TO_B2 = MONSTER_TARGET_RADIUS
+
+random.seed(0)
 
 
 def debug(*texts):
@@ -28,14 +37,15 @@ class Action:
     @staticmethod
     def move(point, text=""):
         return f"MOVE {point.x} {point.y} " + text
-
     @staticmethod
     def wind(point, text=""):
         return f"SPELL WIND {point.x} {point.y} " + text
-
     @staticmethod
     def shield(entity, text=""):
         return f"SPELL SHIELD {entity.id} " + text
+    @staticmethod
+    def control(entity, point, text=""):
+        return f"SPELL CONTROL {entity.id} {point.x} {point.y} " + text
 
 
 # todo create dataclass impl (might be faster?)
@@ -114,7 +124,7 @@ class Monster(Entity):
     health: int
     vp: Point
     near_base: bool
-    threat_for: int
+    threat_for: int  # Given this monster's trajectory, is it a threat to 1=your base, 2=your opponent's base, 0=neither
     turns_to_base: int
     winded: bool = False
 
@@ -133,6 +143,9 @@ def get_nearest_monster(p, monsters):
 # base_x: The corner of the map representing your base
 base_x, base_y = [int(i) for i in input().split()]
 base_p = Point(base_x, base_y)
+opp_base_p = Point(WIDTH-base_x, HEIGHT-base_y)
+# debug(base_p, opp_base_p)
+
 int(input())  # Always 3
 i_turn = 1
 my_health = my_mana = opp_health = opp_mana = 0
@@ -175,8 +188,54 @@ def do_best_action():
         print(action)
 
 
-def attacker_action(hero):
+def attacker_action(hero: Entity):
+    global my_mana, i_turn
+    if i_turn >= TURNS_TO_HARASS and my_mana >= MIN_MANA_TO_HARASS:
+        return harass(hero)
+    return collect_idle_mana(hero)
+
+
+def harass(hero: Entity):
+    debug("harrasing", hero)
     global my_mana
+    for m in monsters:
+        m.d = m.p.dist(hero.p)
+        m.d2b2 = m.p.dist(opp_base_p)
+    close_monsters = [m for m in monsters if m.d <= HERO_FOG]
+    close_monsters_heading_for_me = [m for m in close_monsters if m.threat_for == 1]
+    if close_monsters_heading_for_me:
+        return control_farthest_monster_to_opp(close_monsters_heading_for_me)
+    close_monsters_roaming = [m for m in close_monsters if m.threat_for == 0 and m.health > MIN_HEALTH_TO_CONTROL]
+    if close_monsters_roaming:
+        return control_farthest_monster_to_opp(close_monsters_roaming)
+
+    if hero.p.dist(opp_base_p) > DIST_TO_CLOSE_HARASS:
+        return Action.move(opp_base_p, "closer to B2")
+    if hero.shield_life == 0:  # cannot get shield earlier than before shield wears down
+        return Action.shield(hero)
+
+    # todo better condition probably!
+    monsters_far_away = [m for m in close_monsters if m.d2b2 > m.d and m.d <= WIND_CAST_RANGE and m.shield_life == 0]
+    if monsters_far_away:
+        return Action.wind(opp_base_p, "fuu")
+    monsters_without_shield = [m for m in close_monsters if m.shield_life == 0 and m.health >= MIN_HEALTH_TO_SHIELD]
+    if monsters_without_shield:
+        best_monster_to_shield = min(monsters_without_shield, key=lambda m: m.d2b2)
+        return Action.shield(best_monster_to_shield, f"shield B2 {best_monster_to_shield.id}")
+    if hero.p.dist(opp_base_p) > DIST_TO_GET_EVEN_CLOSER_TO_B2:
+        return Action.move(opp_base_p, "even closer to B2")
+
+    random_dir = Point(random.randrange(-1, 2, 2) * HERO_SPEED, random.randrange(-1, 2, 2) * HERO_SPEED)
+    return Action.move(hero.p + random_dir, "random")
+
+
+def control_farthest_monster_to_opp(monster_list):
+    best_monster_to_control = max(monster_list, key=lambda m: m.d)
+    return Action.control(best_monster_to_control, opp_base_p, f"Base2 {best_monster_to_control.id}")
+
+
+def collect_idle_mana(hero: Entity):
+    debug("collecting wild mana")
     if monsters:
         monster = get_nearest_monster(hero.p, monsters)
         if monster.p.dist(hero.p) <= CLOSE_DIST_TO_PURSUE:
