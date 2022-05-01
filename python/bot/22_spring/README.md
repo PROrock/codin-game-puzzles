@@ -9,12 +9,12 @@
 for seed=0 boss 4 makes me lose 1 life in turn 134
 1.5. 1635 - 1710  one hero collects wild mana
 for seed=0 boss 4 makes me lose third life in turn 144 :-(
-1.5. 1710 - use SHIELD on myself if I was controlled in last turn, harassment logic
+1.5. 1710 - 1910 use SHIELD on myself if I was controlled in last turn, harassment logic
 for seed=0 boss 4 makes me lose third life in turn 159
 for seed=0 boss 4 he loses 3rd life first!
 
 ideas/todos:
-TOP PRIO: better wild mana collecting or attacking opponent!
+TOP PRIO: ?
 
 how fast can hero get to the monster?
 defend only w/ necessary num of heroes

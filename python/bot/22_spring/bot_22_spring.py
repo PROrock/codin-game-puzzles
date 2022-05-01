@@ -197,15 +197,17 @@ def attacker_action(hero: Entity):
 
 def harass(hero: Entity):
     debug("harrasing", hero)
-    global my_mana
+    if hero.p.dist(base_p) <= BASE_FOG:
+        return Action.move(opp_base_p, "away from my base")
+
     for m in monsters:
         m.d = m.p.dist(hero.p)
         m.d2b2 = m.p.dist(opp_base_p)
     close_monsters = [m for m in monsters if m.d <= HERO_FOG]
-    close_monsters_heading_for_me = [m for m in close_monsters if m.threat_for == 1]
+    close_monsters_heading_for_me = [m for m in close_monsters if m.threat_for == 1 and m.shield_life == 0]
     if close_monsters_heading_for_me:
         return control_farthest_monster_to_opp(close_monsters_heading_for_me)
-    close_monsters_roaming = [m for m in close_monsters if m.threat_for == 0 and m.health > MIN_HEALTH_TO_CONTROL]
+    close_monsters_roaming = [m for m in close_monsters if m.threat_for == 0 and m.health > MIN_HEALTH_TO_CONTROL and m.shield_life == 0]
     if close_monsters_roaming:
         return control_farthest_monster_to_opp(close_monsters_roaming)
 
@@ -215,7 +217,8 @@ def harass(hero: Entity):
         return Action.shield(hero)
 
     # todo better condition probably!
-    monsters_far_away = [m for m in close_monsters if m.d2b2 > m.d and m.d <= WIND_CAST_RANGE and m.shield_life == 0]
+    hero_d2b2 = hero.p.dist(opp_base_p)
+    monsters_far_away = [m for m in close_monsters if m.d2b2 > hero_d2b2 and m.d <= WIND_CAST_RANGE and m.shield_life == 0]
     if monsters_far_away:
         return Action.wind(opp_base_p, "fuu")
     monsters_without_shield = [m for m in close_monsters if m.shield_life == 0 and m.health >= MIN_HEALTH_TO_SHIELD]
