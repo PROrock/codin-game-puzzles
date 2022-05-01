@@ -4,11 +4,8 @@ import sys
 from typing import List
 
 # unused consts:
-# WIDTH,HEIGHT = X=17630, Y=9000
 # ANTIFOG: base 6000, hero 2200
-# MOVE monster 400, hero 800
-# monsters target base 5000 units/px
-# monster damage base 300 from base
+WIDTH, HEIGHT = 17630, 9000
 MONSTER_TARGET_RADIUS = 5000
 MONSTER_DAMAGE_RADIUS = 300
 HERO_DAMAGE_RADIUS = 800
@@ -18,6 +15,9 @@ WIND_CAST_RANGE = 1280
 SPELL_COST = 10
 HERO_ATTACK = 2
 WANDER_THRES = 6000+2200
+HERO_FOG = 2200
+CLOSE_DIST_TO_PURSUE = 2200
+CLOSE_DIST_TO_WANDER = HEIGHT//2 - HERO_FOG - MONSTER_SPEED  # -MONSTER_SPEED just not to be to on the edge
 
 
 def debug(*texts):
@@ -32,6 +32,10 @@ class Action:
     @staticmethod
     def wind(point, text=""):
         return f"SPELL WIND {point.x} {point.y} " + text
+
+    @staticmethod
+    def shield(entity, text=""):
+        return f"SPELL SHIELD {entity.id} " + text
 
 
 # todo create dataclass impl (might be faster?)
@@ -81,6 +85,7 @@ class Point:
         return Point(round(self.x, ndigits), round(self.y, ndigits))
 
 
+MIDDLE_POINT = Point(WIDTH // 2, HEIGHT // 2)
 ZERO_VECTOR = Point(0, 0)
 
 
@@ -132,6 +137,7 @@ int(input())  # Always 3
 i_turn = 1
 my_health = my_mana = opp_health = opp_mana = 0
 entities = []
+prev_heroes = {}
 
 
 def load_inputs():
@@ -159,19 +165,35 @@ def load_inputs():
 
 
 def do_best_action():
-    debug("\n".join([str(m) for m in monsters]))
+    # debug("\n".join([str(m) for m in monsters]))
+    attacker, *defenders = my_heroes
+    action = attacker_action(attacker)
+    print(action)
 
-    for hero in my_heroes:
+    for hero in defenders:
         action = best_for_one_hero(hero)
         print(action)
 
 
-def best_for_one_hero(hero):
+def attacker_action(hero):
+    global my_mana
+    if monsters:
+        monster = get_nearest_monster(hero.p, monsters)
+        if monster.p.dist(hero.p) <= CLOSE_DIST_TO_PURSUE:
+            target_p = monster.p
+            return Action.move(target_p, f"AM {monster.id}")
+    if hero.p.dist(MIDDLE_POINT) > CLOSE_DIST_TO_WANDER:
+        return Action.move(MIDDLE_POINT, "")
+    return Action.move(hero.p + Point(-1000, 2000), "")
+
+
+def best_for_one_hero(hero: Entity):
     global my_mana, i_turn
     if monsters:
         monster = get_nearest_monster(base_p, monsters)
+        debug("hero", hero)
         debug(monster)
-        debug(monster.turns_to_base)
+        # debug(monster.turns_to_base)
 
         if (monster.turns_to_base == 1 and monster.shield_life == 0
                 and monster.p.dist(hero.p) < WIND_CAST_RANGE and my_mana >= SPELL_COST and not monster.winded):
@@ -180,6 +202,10 @@ def best_for_one_hero(hero):
             # todo you might want to mark all monsters in neighborhood as well
             monster.winded = True
             return Action.wind(target_p, f"LH{monster.id}")
+
+        prev_hero = prev_heroes.get(hero.id)
+        if hero.shield_life == 0 and prev_hero is not None and prev_hero.is_controlled:
+            return Action.shield(hero)
 
         dist_to_attack = hero.p.dist(monster.p) - HERO_DAMAGE_RADIUS
         if dist_to_attack > 0:
@@ -211,3 +237,4 @@ while True:
     monsters: List[Monster] = [e for e in entities if e.type == 0]
 
     do_best_action()
+    prev_heroes = {h.id: h for h in my_heroes}
