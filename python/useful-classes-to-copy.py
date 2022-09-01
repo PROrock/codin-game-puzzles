@@ -1,7 +1,12 @@
-import math
+from __future__ import annotations
 
+import dataclasses
+import math
 # todo create dataclass impl (might be faster?)
 # todo consider writing a namedtuple implementation - it enables nice tricks `v[0]` and might be faster
+from collections import deque
+from typing import Optional, List
+
 from math_utils import gcd
 
 
@@ -126,3 +131,52 @@ class Line:
 # todo create a Graph object? for start you can see python/medium/the-lost-files/main.py
 # todo create a Tree object? potentially with search functions?
 # todo create few GENERAL! algorithms/strategies like A*,MinMax,...
+
+
+# TODO complete this WIP
+@dataclasses.dataclass(frozen=True)
+class Node:
+    action: object
+    n_steps: int = 0
+    prev_node: Optional[Node] = None
+
+    def expand(self) -> List[Node]:
+        # todo forward reference from future
+        pass
+
+    def is_goal(self):
+        pass
+
+
+class Search:
+    def __init__(self):
+        # todo
+        pass
+
+    def search(self) -> Optional[Node]:
+        visited = set()
+        queue = deque([self._get_start_node()])  # todo or pass in to search method as param?
+
+        while queue:
+            node = queue.popleft()
+            if node not in visited:
+                if node.is_goal():
+                    self.debug(f"found solution {node}")
+                    # todo or return also list of actions chronologically? so it is less dependent on implementation of Node?
+                    return node
+
+                new_nodes = node.expand()
+                queue.extend(new_nodes)
+                visited.union(new_nodes)
+
+        else:
+            # todo not found
+            self.debug("goal not reached")
+            return None
+
+    def _get_start_node(self) -> Node:
+        pass
+
+    def debug(self, *texts):
+        # todo
+        pass

@@ -37,6 +37,7 @@ boss 4 makes me lose 1 life in turn 134
 
 
 saved code:
+```
 dist_to_attack_monster = hero.p.dist(monster.p) - HERO_DAMAGE_RADIUS
 if dist_to_attack_monster > 0:
 # # todo method - is it the most important feature now?
@@ -50,3 +51,4 @@ if dist_to_attack_monster > 0:
 #     # todo find best
 #     # if not vector to base it will have weird numbers and results!
 #     monster_p += monster.vp  # is vp reliable?
+```

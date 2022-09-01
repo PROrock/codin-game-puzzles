@@ -1,4 +1,5 @@
 # codin-game-puzzles
+TODO what to do with this file? update or remove list of puzzles?
 
 ## Easy
 
