@@ -110,7 +110,10 @@ while True:
 
     saveable_targets = {h for h in z_targets if h.diff >= 0}
     debug(saveable_targets)
-    if len(saveable_targets) >= 1:
+    if len(zombies) == 1:
+        z = next(iter(zombies.values()))
+        target_v = z.closest_human.v
+    elif len(saveable_targets) >= 1:
         h = max(saveable_targets, key=attrgetter("id"))
         target_v = h.v
     elif human_id in saveable_humans:
