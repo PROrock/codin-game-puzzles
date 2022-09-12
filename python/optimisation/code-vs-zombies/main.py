@@ -4,6 +4,7 @@ import operator
 import sys
 
 # Save humans, destroy zombies!
+from operator import itemgetter
 
 ASH_SPEED=1000
 ASH_RANGE=2000
@@ -67,6 +68,7 @@ while True:
     for z in zombies.values():
         z.ash_dist = (z.vnext - ash).length()
 
+    saveable_humans = {}
     for h in list(humans.values()):  # list() to make copy, so we can delete from it (while iterating over a copy)
         z_dists = [(h.v - z.v).length() for z in zombies.values()]
         min_z_dist = min(z_dists)
@@ -79,7 +81,17 @@ while True:
         h.diff = h.min_z_turns-h.ash_turns
         if h.diff < 0:
             debug(f"H {h} is unsaveable, forgetting him...")
-            del humans[h.id] # can't save unsavable (=too far away from me, too close to a zombie) humans
+        else:
+            saveable_humans[h.id] = h
+
+    for z_id, z in zombies.items():
+        # XXX: I'm ignoring Ash here!
+        h_dists_by_id = {h: (h.v - z.v).length() for h in humans.values()}
+        closest_human_item = min(h_dists_by_id.items(), key=itemgetter(1))
+        debug(f"z {z_id}: {closest_human_item=}")
+        closest_human = closest_human_item[0]
+        z.closest_human = closest_human
+    z_targets = [z.closest_human for z in zombies.values()]
 
     for h in humans.values():
         debug(f"{h}, a_turns={h.ash_turns}, z_turns={h.min_z_turns}, diff = {h.diff}")
@@ -96,7 +108,12 @@ while True:
     #     # this is nice, but added only lousy 290 points :-(
     #     target_v = c
 
-    if human_id in humans:
+    saveable_targets = {h for h in z_targets if h.diff >= 0}
+    debug(saveable_targets)
+    if len(saveable_targets) == 1:
+        h = next(iter(saveable_targets))
+        target_v = h.v
+    elif human_id in saveable_humans:
         target_v = Vect(human_x, human_y)
     else:
         # todo - take centroid of humans which are close together instead of just one - compute centroid, dist to it and somehow threshold it?
