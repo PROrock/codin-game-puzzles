@@ -1,7 +1,6 @@
 import functools
-import operator
-
 import math
+import operator
 import sys
 
 # Save humans, destroy zombies!
@@ -19,14 +18,8 @@ class Vect:
         self.x = x
         self.y = y
 
-    def l1dist(self, other_vect):
-        d = abs(self.x-other_vect.x) + abs(self.y-other_vect.y)
-        # print(f"l1 dist: {self} and {other_vect} is {d}", file=sys.stderr, flush=True)
-        return d
-
     def __repr__(self):
         return f"V({self.x},{self.y})"
-
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
     def __hash__(self):
