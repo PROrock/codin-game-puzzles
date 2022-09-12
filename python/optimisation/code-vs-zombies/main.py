@@ -4,7 +4,7 @@ import operator
 import sys
 
 # Save humans, destroy zombies!
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 
 ASH_SPEED=1000
 ASH_RANGE=2000
@@ -110,8 +110,8 @@ while True:
 
     saveable_targets = {h for h in z_targets if h.diff >= 0}
     debug(saveable_targets)
-    if len(saveable_targets) == 1:
-        h = next(iter(saveable_targets))
+    if len(saveable_targets) >= 1:
+        h = max(saveable_targets, key=attrgetter("id"))
         target_v = h.v
     elif human_id in saveable_humans:
         target_v = Vect(human_x, human_y)
