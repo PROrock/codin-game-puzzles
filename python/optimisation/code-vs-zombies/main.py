@@ -3,9 +3,10 @@ import math
 import sys
 from operator import itemgetter, attrgetter, add
 
-ASH_SPEED=1000
-ASH_RANGE=2000
-ZOMBIE_SPEED=400
+ASH_SPEED = 1000
+ASH_RANGE = 2000
+ZOMBIE_SPEED = 400
+
 
 def debug(text):
     print(text, file=sys.stderr, flush=True)
@@ -28,21 +29,22 @@ class Vect:
     def __sub__(self, other):
         return Vect((self.x - other.x), (self.y - other.y))
     def __truediv__(self, other):
-        return Vect(self.x/other, self.y/other)
+        return Vect(self.x / other, self.y / other)
     def length(self):
-        return math.sqrt(self.x**2 + self.y**2)
+        return math.sqrt(self.x ** 2 + self.y ** 2)
+
 
 class Object:
     def __init__(self, id, x, y, xnext=None, ynext=None):
-        self.id=id
-        self.v=Vect(x,y)
-        self.vnext=Vect(xnext,ynext) if xnext is not None and ynext is not None else None
+        self.id = id
+        self.v = Vect(x, y)
+        self.vnext = Vect(xnext, ynext) if xnext is not None and ynext is not None else None
     def __repr__(self):
         return f"Id={self.id}, {self.v}"
-        # return f"Id={self.id}, {self.v}, next={self.vnext}"
 
 def centroid(vectors):
-    return functools.reduce(add, vectors)/len(vectors)
+    return functools.reduce(add, vectors) / len(vectors)
+
 
 def compute_target_v():
     # two main optimisation paths now:
@@ -68,7 +70,7 @@ def compute_target_v():
         z = next(iter(zombies.values()))
         target_v = z.closest_human.v
     elif len(saveable_targets) >= 1:
-        h = max(saveable_targets, key=attrgetter("id"))
+        h = min(saveable_targets, key=attrgetter("diff"))
         target_v = h.v
     # w/o this ugly hack/overfit I have almost 2k less!
     # todo replace with actual smart logic!
@@ -90,17 +92,17 @@ while True:
     zombies = {}
 
     x, y = [int(i) for i in input().split()]
-    ash=Vect(x,y)
+    ash = Vect(x, y)
 
     human_count = int(input())
     for i in range(human_count):
         human_id, human_x, human_y = [int(j) for j in input().split()]
-        humans[human_id]=Object(human_id, human_x, human_y)
+        humans[human_id] = Object(human_id, human_x, human_y)
 
     zombie_count = int(input())
     for i in range(zombie_count):
         zombie_id, zombie_x, zombie_y, zombie_xnext, zombie_ynext = [int(j) for j in input().split()]
-        zombies[zombie_id]=Object(zombie_id, zombie_x, zombie_y, zombie_xnext, zombie_ynext)
+        zombies[zombie_id] = Object(zombie_id, zombie_x, zombie_y, zombie_xnext, zombie_ynext)
 
     for z in zombies.values():
         z.ash_dist = (z.vnext - ash).length()
@@ -111,18 +113,18 @@ while True:
         min_z_dist = min(z_dists)
         # debug(f"Min is {min_z_dist} from {z_dists}")
         h.min_z_dist = min_z_dist
-        h.min_z_turns = math.ceil(min_z_dist/ZOMBIE_SPEED)
+        h.min_z_turns = math.ceil(min_z_dist / ZOMBIE_SPEED)
 
         h.ash_dist = (h.v - ash).length()
-        h.ash_turns = math.ceil((h.ash_dist-ASH_RANGE)/ASH_SPEED)
-        h.diff = h.min_z_turns-h.ash_turns
+        h.ash_turns = math.ceil((h.ash_dist - ASH_RANGE) / ASH_SPEED)
+        h.diff = h.min_z_turns - h.ash_turns
         if h.diff < 0:
             debug(f"H {h} is unsaveable, forgetting him...")
         else:
             saveable_humans[h.id] = h
 
     ash_human = Object(-1, ash.x, ash.y)
-    ash_human.diff = 0
+    ash_human.diff = 99999
     for z_id, z in zombies.items():
         # XXX: I'm including Ash here!
         all_humans = [*humans.values(), ash_human]
