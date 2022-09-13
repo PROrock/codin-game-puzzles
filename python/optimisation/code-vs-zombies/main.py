@@ -44,6 +44,46 @@ class Object:
 def centroid(vectors):
     return functools.reduce(add, vectors)/len(vectors)
 
+def compute_target_v():
+    # two main optimisation paths now:
+    # focus on saving one human and do one turn multikills -> try to extend to protect one cluster of humans if possible
+    # focus on saving as many humans as possible - THIS IS PROBABLY MORE LUCRATIVE IN POINTS I guess
+
+    msg = ""
+
+    # close_zombies_v = [z.vnext for z in zombies.values() if z.ash_dist < 2 * ASH_RANGE]
+    # debug([z.ash_dist for z in zombies.values()])
+    # debug(close_zombies_v)
+    # c = centroid(close_zombies_v) if close_zombies_v else Vect(-ASH_RANGE, -ASH_RANGE)
+    # dist_human_z_centroid = (next(iter(humans.values())).v - c).length()
+    # debug(f"centroid={c}, dist_human_z_centroid={dist_human_z_centroid}")
+    # # todo following cond for < ASH_RANGE is probably too restrictive (not every time!_, but I'm too tired to think about it now
+    # if len(humans) == 1 and dist_human_z_centroid < 1 * ASH_RANGE:
+    #     # this is nice, but added only lousy 290 points :-(
+    #     target_v = c
+
+    saveable_targets = {h for h in z_targets if h.diff >= 0}
+    debug(saveable_targets)
+    if len(zombies) == 1:
+        z = next(iter(zombies.values()))
+        target_v = z.closest_human.v
+    elif len(saveable_targets) >= 1:
+        h = max(saveable_targets, key=attrgetter("id"))
+        target_v = h.v
+    # w/o this ugly hack/overfit I have almost 2k less!
+    # todo replace with actual smart logic!
+    elif human_id in saveable_humans:
+        target_v = Vect(human_x, human_y)
+        msg = "input last human"
+    else:
+        # todo - take centroid of humans which are close together instead of just one - compute centroid, dist to it and somehow threshold it?
+        max_h = max(humans.values(), key=lambda h: h.diff)
+        debug(f"Max is {max_h}")
+        target_v = max_h.v
+        msg = f"max diff {max_h}"
+    return target_v, msg
+
+
 # game loop
 while True:
     humans = {}
@@ -96,36 +136,5 @@ while True:
     for h in humans.values():
         debug(f"{h}, a_turns={h.ash_turns}, z_turns={h.min_z_turns}, diff = {h.diff}")
 
-
-    # close_zombies_v = [z.vnext for z in zombies.values() if z.ash_dist < 2 * ASH_RANGE]
-    # debug([z.ash_dist for z in zombies.values()])
-    # debug(close_zombies_v)
-    # c = centroid(close_zombies_v) if close_zombies_v else Vect(-ASH_RANGE, -ASH_RANGE)
-    # dist_human_z_centroid = (next(iter(humans.values())).v - c).length()
-    # debug(f"centroid={c}, dist_human_z_centroid={dist_human_z_centroid}")
-    # # todo following cond for < ASH_RANGE is probably too restrictive (not every time!_, but I'm too tired to think about it now
-    # if len(humans) == 1 and dist_human_z_centroid < 1 * ASH_RANGE:
-    #     # this is nice, but added only lousy 290 points :-(
-    #     target_v = c
-
-    saveable_targets = {h for h in z_targets if h.diff >= 0}
-    debug(saveable_targets)
-    if len(zombies) == 1:
-        z = next(iter(zombies.values()))
-        target_v = z.closest_human.v
-    elif len(saveable_targets) >= 1:
-        h = max(saveable_targets, key=attrgetter("id"))
-        target_v = h.v
-    elif human_id in saveable_humans:
-        target_v = Vect(human_x, human_y)
-    else:
-        # todo - take centroid of humans which are close together instead of just one - compute centroid, dist to it and somehow threshold it?
-        max_h = max(humans.values(), key=lambda h:h.diff)
-        debug(f"Max is {max_h}")
-        target_v = max_h.v
-
-    print(f"{int(target_v.x)} {int(target_v.y)}")
-
-    # two main optimisation paths now:
-    # focus on saving one human and do one turn multikills -> try to extend to protect one cluster of humans if possible
-    # focus on saving as many humans as possible - THIS IS PROBABLY MORE LUCRATIVE IN POINTS I guess
+    target_v, msg = compute_target_v()
+    print(f"{int(target_v.x)} {int(target_v.y)} {msg}")
