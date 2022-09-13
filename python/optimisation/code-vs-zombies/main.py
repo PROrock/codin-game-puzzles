@@ -1,10 +1,7 @@
 import functools
 import math
-import operator
 import sys
-
-# Save humans, destroy zombies!
-from operator import itemgetter, attrgetter
+from operator import itemgetter, attrgetter, add
 
 ASH_SPEED=1000
 ASH_RANGE=2000
@@ -45,7 +42,7 @@ class Object:
         # return f"Id={self.id}, {self.v}, next={self.vnext}"
 
 def centroid(vectors):
-    return functools.reduce(operator.add, vectors)/len(vectors)
+    return functools.reduce(add, vectors)/len(vectors)
 
 # game loop
 while True:
@@ -84,9 +81,12 @@ while True:
         else:
             saveable_humans[h.id] = h
 
+    ash_human = Object(-1, ash.x, ash.y)
+    ash_human.diff = 0
     for z_id, z in zombies.items():
-        # XXX: I'm ignoring Ash here!
-        h_dists_by_id = {h: (h.v - z.v).length() for h in humans.values()}
+        # XXX: I'm including Ash here!
+        all_humans = [*humans.values(), ash_human]
+        h_dists_by_id = {h: (h.v - z.v).length() for h in all_humans}
         closest_human_item = min(h_dists_by_id.items(), key=itemgetter(1))
         debug(f"z {z_id}: {closest_human_item=}")
         closest_human = closest_human_item[0]
