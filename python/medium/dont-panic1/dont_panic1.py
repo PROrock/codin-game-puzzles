@@ -54,3 +54,8 @@ while 1:
     debug(targetDir)
 
     print(action)  # action: WAIT or BLOCK
+
+    # alternative solution (based on code golf)
+    # targetPos = m[cloneFloor]
+    # if dir*targetPos >= dir*clonePos: print("WAIT")
+    # else:print("BLOCK")
