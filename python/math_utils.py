@@ -57,3 +57,11 @@ def is_perfect_number(n):
             factors.append(i)
 
     return sum(factors) == n
+
+
+# naive brute-force algorithm
+def is_prime(x):
+    for i in range(2, x//2):
+        if x % i == 0:
+            return False
+    return True
