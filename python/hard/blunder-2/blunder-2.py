@@ -2,6 +2,7 @@ import sys
 from collections import defaultdict, deque
 from dataclasses import dataclass
 
+START = "0"
 EXIT = "E"
 
 
@@ -34,25 +35,43 @@ for i in range(n):
     if next2 != EXIT:
         incoming_rooms[next2].append(id)
 
-m = {}
+exits = []
 for room in rooms_by_id.values():
     if room.has_exit():
-        m[room.id] = room.money
+        exits.append(room.id)
 
-debug(rooms_by_id)
-debug(m)
+# debug(rooms_by_id)
+# debug(exits)
 
-q = deque(m.keys())
-m[EXIT] = 0
-while len(q):
-    r = rooms_by_id[q.popleft()]
-    nexts = [m.get(r.left), m.get(r.right)]
-    if None in nexts:
-        q.append(r.id)
-        debug(f"Enqueuing room {r.id} once again")
-        continue
-    maximum = max(nexts)
-    m[r.id] = maximum + r.money
-    q.extend(incoming_rooms[r.id])
 
-print(m["0"])
+def build_max_dict(exit):
+    m = {EXIT: 0, exit: rooms_by_id[exit].money}
+    q = deque(incoming_rooms[exit])
+    visited = set()
+    while len(q) and START not in m:
+        r = rooms_by_id[q.popleft()]
+        nexts = [m.get(r.left), m.get(r.right)]
+        if None in nexts:
+            debug(f"Enqueuing room {r.id} once again. {m=}")
+            if r.left not in m:
+                q.appendleft(r.left)
+            if r.right not in m:
+                q.appendleft(r.right)
+            q.append(r.id)
+            continue
+        maximum = max(nexts)
+        m[r.id] = maximum + r.money
+        visited.add(r.id)
+
+        incoming = [id for id in incoming_rooms[r.id] if id not in visited]
+        debug(f"Processed room {r.id} with sum {m[r.id]}, next processing: {incoming}")
+        q.extend(incoming)
+    return m
+
+
+max_per_exit = []
+for e in exits:
+    max_dict = build_max_dict(e)
+    max_per_exit.append(max_dict[START])
+
+print(max(max_per_exit))
