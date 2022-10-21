@@ -65,3 +65,22 @@ def is_prime(x):
         if x % i == 0:
             return False
     return True
+
+
+# Returns permutation indices. My naive implementation of itertools.permutations(range(n))
+def permutate(n: int):
+    if n < 1:
+        return []
+    if n == 1:
+        return [[0]]
+
+    minus_one_permutations = permutate(n - 1)
+    result = []
+    for perm in minus_one_permutations:
+        result.extend([[*perm[:i], n-1, *perm[i:]] for i in range(len(perm), -1, -1)])
+    return result
+
+assert permutate(0) == []
+assert permutate(1) == [[0]]
+assert permutate(2) == [[0, 1], [1, 0]]
+assert permutate(3) == [[0, 1, 2], [0, 2, 1], [2, 0, 1], [1, 0, 2], [1, 2, 0], [2, 1, 0]]
