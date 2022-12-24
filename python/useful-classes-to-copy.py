@@ -35,6 +35,8 @@ class Point:
     def __hash__(self):
         return hash((self.x, self.y))
 
+    def __bool__(self):
+        return True
     def __add__(self, other_point):
         return Point((self.x + other_point.x), (self.y+other_point.y))
     def __sub__(self, other_point):
@@ -84,8 +86,11 @@ class Vect:
         return Vect(self.x / gcd_xy, self.y / gcd_xy)
 
     # this doesn't work as len must return integer not float!
-    def __len__(self):
-        return math.sqrt(self.x**2 + self.y**2)
+    # def __len__(self):
+    #     return math.sqrt(self.x**2 + self.y**2)
+
+    def __bool__(self):
+        return True
 
     def __repr__(self):
         return f"V({self.x},{self.y})"
@@ -105,9 +110,9 @@ class Vect:
     # right multiplication to support 2 * p
     __rmul__ = __mul__
     def __neg__(self):
-        return Point(-self.x, -self.y)
+        return Vect(-self.x, -self.y)
     def round(self, ndigits=None):
-        return Point(round(self.x, ndigits), round(self.y, ndigits))
+        return Vect(round(self.x, ndigits), round(self.y, ndigits))
 
 
 class Line:
