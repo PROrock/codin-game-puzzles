@@ -86,6 +86,7 @@ def get_tile(v):
     return map[v.y][v.x]
 
 width, height = [int(i) for i in input().split()]
+i_turn = 0
 
 while True:
     actions = []
@@ -149,7 +150,7 @@ while True:
 
     possible_build_tiles = [tile for tile in my_tiles if tile.can_build]
     n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles), tens_of_matter)
-    if n_recycler_to_build and len(my_tiles) >= 7 and len(spawn_candidates_no_units) >= 4:
+    if n_recycler_to_build and len(my_tiles) >= 7 and len(spawn_candidates_no_units) >= 4 and i_turn <= 150:
         tiles_to_build_on = random.sample(possible_build_tiles, n_recycler_to_build)
         for tile_to_build_on in tiles_to_build_on:
             actions.append(build(tile_to_build_on.v))
@@ -164,3 +165,4 @@ while True:
         actions.append(spawn(spawn_units, target))
 
     print(";".join(actions))
+    i_turn += 1
