@@ -8,7 +8,8 @@
 seed=5324676205943733000
 
 54:11
-
+501/982 v1
+? v2
 
 ### TODO:
 - [X] save map somehow

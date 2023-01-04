@@ -6,7 +6,7 @@ from typing import Optional
 
 random.seed(0)
 
-N_OF_WANTED_RECYCLERS = 3
+N_OF_WANTED_RECYCLERS = 2
 
 
 class Vect:
@@ -110,10 +110,10 @@ while True:
 
         map.append(map_row)
 
-    debug(my_matter, opp_matter)
-    debug([(tile.v.x, tile.v.y, tile.units) for tile in my_units])
-    debug(f"I have {len(my_tiles)} tiles, {len(my_recyclers)} recyclers, "
-          f"{len(my_units)} unit tiles, {sum(tile.units for tile in my_units)} units")
+    # debug(my_matter, opp_matter)
+    # debug([(tile.v.x, tile.v.y, tile.units) for tile in my_units])
+    # debug(f"I have {len(my_tiles)} tiles, {len(my_recyclers)} recyclers, "
+    #       f"{len(my_units)} unit tiles, {sum(tile.units for tile in my_units)} units")
 
     for tile in my_units:
         target = Vect(random.randrange(0, width), random.randrange(0, height))
@@ -121,9 +121,14 @@ while True:
 
     my_actual_matter = my_matter
     tens_of_matter = my_matter // 10
+
+    spawn_candidates = [tile for tile in my_tiles if tile.can_spawn]
+    spawn_candidates_no_units = [tile for tile in spawn_candidates if not tile.units]
+    debug(f"{len(spawn_candidates_no_units)=}")
+
     possible_build_tiles = [tile for tile in my_tiles if tile.can_build]
     n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles), tens_of_matter)
-    if n_recycler_to_build and len(my_tiles) >= 5:
+    if n_recycler_to_build and len(my_tiles) >= 7 and len(spawn_candidates_no_units) >= 4:
         tiles_to_build_on = random.sample(possible_build_tiles, n_recycler_to_build)
         for tile_to_build_on in tiles_to_build_on:
             actions.append(build(tile_to_build_on.v))
@@ -131,7 +136,10 @@ while True:
 
     spawn_units = my_actual_matter // 10
     # todo fix not spawn where i try to build - but is it error or just silent?
-    if my_first_spawn_tile and spawn_units:
-        actions.append(spawn(spawn_units, my_first_spawn_tile))
+    if spawn_units:
+        if len(spawn_candidates_no_units):
+            spawn_candidates = spawn_candidates_no_units
+        target = random.choice(spawn_candidates).v
+        actions.append(spawn(spawn_units, target))
 
     print(";".join(actions))
