@@ -2,6 +2,7 @@ import dataclasses
 import math
 import random
 import sys
+from typing import Optional
 
 random.seed(0)
 
@@ -53,6 +54,7 @@ class Vect:
 
 @dataclasses.dataclass(frozen=True)
 class Tile:
+    v: Vect
     scrap_amount: int
     owner: int
     "# owner: 1 = me, 0 = foe, -1 = neutral"
@@ -82,7 +84,7 @@ width, height = [int(i) for i in input().split()]
 
 while True:
     actions = []
-    my_first_spawn_tile = None
+    my_first_spawn_tile: Optional[Vect] = None
     map = []
     my_tiles = []
     my_units = []
@@ -92,28 +94,29 @@ while True:
     for i in range(height):
         map_row = []
         for j in range(width):
+            v = Vect(j, i)
             # owner: 1 = me, 0 = foe, -1 = neutral
             scrap_amount, owner, units, recycler, can_build, can_spawn, in_range_of_recycler = [int(k) for k in input().split()]
-            tile = Tile(scrap_amount, owner, units, bool(recycler), bool(can_build), bool(can_spawn), bool(in_range_of_recycler))
+            tile = Tile(v, scrap_amount, owner, units, bool(recycler), bool(can_build), bool(can_spawn), bool(in_range_of_recycler))
             map_row.append(tile)
             if my_first_spawn_tile is None and tile.can_spawn:
-                my_first_spawn_tile = Vect(j, i)
+                my_first_spawn_tile = v
             if tile.owner == 1:
                 my_tiles.append(tile)
                 if tile.units:
-                    my_units.append((Vect(j, i), tile.units, tile))  # tile.units and tile are duplicate/redundant information
+                    my_units.append(tile)
                 if tile.recycler:
-                    my_recyclers.append((Vect(j, i), tile))
+                    my_recyclers.append(tile)
 
         map.append(map_row)
 
     # debug(my_matter, opp_matter)
-    # debug([(v.x,v.y, units) for v, units, tile in my_units])
+    # debug([(tile.v.x,tile.v.y, tile.units) for tile in my_units])
     # debug(f"I have {len(my_tiles)} tiles, {len(my_units)} unit tiles, {sum(units for _,_,units,_ in my_units)} units")
 
-    for v, units, tile in my_units:
+    for tile in my_units:
         target = Vect(random.randrange(0, width), random.randrange(0, height))
-        actions.append(move(units, v, target))
+        actions.append(move(tile.units, tile.v, target))
 
     my_actual_matter = my_matter
     tens_of_matter = my_matter // 10
@@ -121,9 +124,9 @@ while True:
     n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles))
     # built_recyclers =
     if n_recycler_to_build and tens_of_matter and len(my_tiles) >= 5:
-        tile_items_to_build_on = random.sample(possible_build_tiles, n_recycler_to_build)
-        for to_build_v, _ in tile_items_to_build_on:
-            actions.append(build(to_build_v))
+        tiles_to_build_on = random.sample(possible_build_tiles, n_recycler_to_build)
+        for tile_to_build_on in tiles_to_build_on:
+            actions.append(build(tile_to_build_on.v))
             my_actual_matter -= 10
 
     spawn_units = my_actual_matter // 10
