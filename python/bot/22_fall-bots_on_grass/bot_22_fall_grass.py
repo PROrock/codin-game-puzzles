@@ -79,6 +79,11 @@ def spawn(amount: int, vect: Vect):
 def build(vect: Vect):
     return f"BUILD {vect.x} {vect.y}"
 
+def get_tile(v):
+    if not 0 <= v.x < width or not 0 <= v.y < height:
+        return None
+    # debug(f"map q: {v} {width=} {height=} {0 > v.x >= width=} {v.x >= width}")
+    return map[v.y][v.x]
 
 width, height = [int(i) for i in input().split()]
 
@@ -87,6 +92,7 @@ while True:
     my_first_spawn_tile: Optional[Vect] = None
     map = []
     my_tiles = []
+    non_my_tiles = []
     my_units = []
     my_recyclers = []
 
@@ -107,6 +113,8 @@ while True:
                     my_units.append(tile)
                 if tile.recycler:
                     my_recyclers.append(tile)
+            else:
+                non_my_tiles.append(tile)
 
         map.append(map_row)
 
@@ -115,16 +123,29 @@ while True:
     # debug(f"I have {len(my_tiles)} tiles, {len(my_recyclers)} recyclers, "
     #       f"{len(my_units)} unit tiles, {sum(tile.units for tile in my_units)} units")
 
-    for tile in my_units:
-        target = Vect(random.randrange(0, width), random.randrange(0, height))
-        actions.append(move(tile.units, tile.v, target))
+    move_candidates = [tile for tile in non_my_tiles if tile.scrap_amount > 0]
+    if len(move_candidates):
+        for tile in my_units:
+            neighbour_vs = [Vect(x,y) for x,y in zip([1,-1,0,0], [0,0,1,-1])]
+            non_my_neighbours = [n_tile for neighbour_v in neighbour_vs if (n_tile := get_tile(tile.v + neighbour_v)) and n_tile.owner != 1 and n_tile.scrap_amount > 0]
+            # not rly nice, but ok
+            if len(non_my_neighbours):
+                move_candidates = non_my_neighbours
+            # if tile.units >= 3:
+            n_moves = min(tile.units // 3, 4) + 1
+            for _ in range(n_moves):
+                index = (tile.v.y*width + tile.v.x + random.randint(0, 1)) % len(move_candidates)
+                target = move_candidates[index].v
+                # target = random.choice(move_candidates).v
+                units_to_move = tile.units // n_moves
+                actions.append(move(units_to_move, tile.v, target))
 
     my_actual_matter = my_matter
     tens_of_matter = my_matter // 10
 
     spawn_candidates = [tile for tile in my_tiles if tile.can_spawn]
     spawn_candidates_no_units = [tile for tile in spawn_candidates if not tile.units]
-    debug(f"{len(spawn_candidates_no_units)=}")
+    # debug(f"{len(spawn_candidates_no_units)=}")
 
     possible_build_tiles = [tile for tile in my_tiles if tile.can_build]
     n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles), tens_of_matter)
