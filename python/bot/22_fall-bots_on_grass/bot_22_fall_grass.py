@@ -110,9 +110,10 @@ while True:
 
         map.append(map_row)
 
-    # debug(my_matter, opp_matter)
-    # debug([(tile.v.x,tile.v.y, tile.units) for tile in my_units])
-    # debug(f"I have {len(my_tiles)} tiles, {len(my_units)} unit tiles, {sum(units for _,_,units,_ in my_units)} units")
+    debug(my_matter, opp_matter)
+    debug([(tile.v.x, tile.v.y, tile.units) for tile in my_units])
+    debug(f"I have {len(my_tiles)} tiles, {len(my_recyclers)} recyclers, "
+          f"{len(my_units)} unit tiles, {sum(tile.units for tile in my_units)} units")
 
     for tile in my_units:
         target = Vect(random.randrange(0, width), random.randrange(0, height))
@@ -121,9 +122,8 @@ while True:
     my_actual_matter = my_matter
     tens_of_matter = my_matter // 10
     possible_build_tiles = [tile for tile in my_tiles if tile.can_build]
-    n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles))
-    # built_recyclers =
-    if n_recycler_to_build and tens_of_matter and len(my_tiles) >= 5:
+    n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles), tens_of_matter)
+    if n_recycler_to_build and len(my_tiles) >= 5:
         tiles_to_build_on = random.sample(possible_build_tiles, n_recycler_to_build)
         for tile_to_build_on in tiles_to_build_on:
             actions.append(build(tile_to_build_on.v))

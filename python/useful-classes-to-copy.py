@@ -188,5 +188,4 @@ class Search:
         pass
 
     def debug(self, *texts):
-        # todo
-        pass
+        return print(*texts, file=sys.stderr, flush=True)

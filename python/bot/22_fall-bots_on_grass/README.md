@@ -1,11 +1,13 @@
 # 22 Fall - Keep off the grass!
 
 30 min ? - random bot, won Wood
-4.1. 1755 - 1815, 1822 - 1831, 2155 -  (in train, underground, bus) - finished refactoring to Tiles and Vect, started recyclers
-
+4.1. 1755 - 1815, 1822 - 1831, 2155 - 2208 (in train, underground, bus) - finished refactoring to Tiles and Vect, started recyclers
+4.1. 22:55 - 
 
 
 seed=5324676205943733000
+
+54:11
 
 
 ### TODO:
