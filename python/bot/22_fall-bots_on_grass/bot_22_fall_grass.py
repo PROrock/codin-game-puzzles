@@ -3,6 +3,11 @@ import math
 import random
 import sys
 
+random.seed(0)
+
+N_OF_WANTED_RECYCLERS = 3
+
+
 class Vect:
     """Immutable 2D vector"""
     def __init__(self, x, y):
@@ -66,14 +71,11 @@ def debug(*s):
 def move(amount: int, from_: Vect, to: Vect):
     return f"MOVE {amount} {from_.x} {from_.y} {to.x} {to.y}"
 
-# def move_old(amount: int, from_x: int, from_y: int, to_x: int, to_y: int):
-#     return f"MOVE {amount} {from_x} {from_y} {to_x} {to_y}"
-
 def spawn(amount: int, vect: Vect):
     return f"SPAWN {amount} {vect.x} {vect.y}"
 
-# def spawn_old(amount: int, x: int, y: int):
-#     return f"SPAWN {amount} {x} {y}"
+def build(vect: Vect):
+    return f"BUILD {vect.x} {vect.y}"
 
 
 width, height = [int(i) for i in input().split()]
@@ -84,6 +86,7 @@ while True:
     map = []
     my_tiles = []
     my_units = []
+    my_recyclers = []
 
     my_matter, opp_matter = [int(i) for i in input().split()]
     for i in range(height):
@@ -99,6 +102,8 @@ while True:
                 my_tiles.append(tile)
                 if tile.units:
                     my_units.append((Vect(j, i), tile.units, tile))  # tile.units and tile are duplicate/redundant information
+                if tile.recycler:
+                    my_recyclers.append((Vect(j, i), tile))
 
         map.append(map_row)
 
@@ -110,7 +115,19 @@ while True:
         target = Vect(random.randrange(0, width), random.randrange(0, height))
         actions.append(move(units, v, target))
 
-    spawn_units = my_matter//10
+    my_actual_matter = my_matter
+    tens_of_matter = my_matter // 10
+    possible_build_tiles = [tile for tile in my_tiles if tile.can_build]
+    n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles))
+    # built_recyclers =
+    if n_recycler_to_build and tens_of_matter and len(my_tiles) >= 5:
+        tile_items_to_build_on = random.sample(possible_build_tiles, n_recycler_to_build)
+        for to_build_v, _ in tile_items_to_build_on:
+            actions.append(build(to_build_v))
+            my_actual_matter -= 10
+
+    spawn_units = my_actual_matter // 10
+    # todo fix not spawn where i try to build - but is it error or just silent?
     if my_first_spawn_tile and spawn_units:
         actions.append(spawn(spawn_units, my_first_spawn_tile))
 
