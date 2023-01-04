@@ -154,7 +154,7 @@ class Node:
         # todo forward reference from future
         pass
 
-    def is_goal(self):
+    def is_goal(self) -> bool:
         pass
 
 

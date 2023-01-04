@@ -1,3 +1,4 @@
+import dataclasses
 import math
 import random
 import sys
@@ -15,17 +16,6 @@ class Vect:
 
     def l1_norm(self):
         return abs(self.x) + abs(self.y)
-
-    def l2_norm(self):
-        """
-        XXX: Consider using math.hypot(*coordinates) or math.dist(p, q), which is probably faster.
-        See https://docs.python.org/3/library/math.html#math.dist
-        For timing guide, see https://stackoverflow.com/a/24105845/2127340
-        """
-        return math.sqrt(self.x**2 + self.y**2)
-
-    def l_inf_norm(self):
-        return max(abs(self.x), abs(self.y))
 
     # this doesn't work as len must return integer not float!
     def __len__(self):
@@ -56,14 +46,34 @@ class Vect:
     def round(self, ndigits=None):
         return Vect(round(self.x, ndigits), round(self.y, ndigits))
 
+@dataclasses.dataclass(frozen=True)
+class Tile:
+    scrap_amount: int
+    owner: int
+    "# owner: 1 = me, 0 = foe, -1 = neutral"
+    units: int
+    recycler: bool
+    can_build: bool
+    can_spawn: bool
+    in_range_of_recycler: bool
+
+    def __repr__(self):
+        return f"T({self.scrap_amount}, {owner}, {units})"
+
 def debug(*s):
     print(*s, file=sys.stderr, flush=True)
 
-def move(amount: int, from_x: int, from_y: int, to_x: int, to_y: int):
-    return f"MOVE {amount} {from_x} {from_y} {to_x} {to_y}"
+def move(amount: int, from_: Vect, to: Vect):
+    return f"MOVE {amount} {from_.x} {from_.y} {to.x} {to.y}"
 
-def spawn(amount: int, x: int, y: int):
-    return f"SPAWN {amount} {x} {y}"
+# def move_old(amount: int, from_x: int, from_y: int, to_x: int, to_y: int):
+#     return f"MOVE {amount} {from_x} {from_y} {to_x} {to_y}"
+
+def spawn(amount: int, vect: Vect):
+    return f"SPAWN {amount} {vect.x} {vect.y}"
+
+# def spawn_old(amount: int, x: int, y: int):
+#     return f"SPAWN {amount} {x} {y}"
 
 
 width, height = [int(i) for i in input().split()]
@@ -71,20 +81,37 @@ width, height = [int(i) for i in input().split()]
 while True:
     actions = []
     my_first_spawn_tile = None
+    map = []
+    my_tiles = []
+    my_units = []
 
     my_matter, opp_matter = [int(i) for i in input().split()]
     for i in range(height):
+        map_row = []
         for j in range(width):
             # owner: 1 = me, 0 = foe, -1 = neutral
             scrap_amount, owner, units, recycler, can_build, can_spawn, in_range_of_recycler = [int(k) for k in input().split()]
-            if my_first_spawn_tile is None and owner == 1 and can_spawn:
+            tile = Tile(scrap_amount, owner, units, bool(recycler), bool(can_build), bool(can_spawn), bool(in_range_of_recycler))
+            map_row.append(tile)
+            if my_first_spawn_tile is None and tile.can_spawn:
                 my_first_spawn_tile = Vect(j, i)
-            if units and owner == 1:
-                actions.append(move(units, j, i, random.randrange(0, width), random.randrange(0, height)))
+            if tile.owner == 1:
+                my_tiles.append(tile)
+                if tile.units:
+                    my_units.append((Vect(j, i), tile.units, tile))  # tile.units and tile are duplicate/redundant information
+
+        map.append(map_row)
+
+    # debug(my_matter, opp_matter)
+    # debug([(v.x,v.y, units) for v, units, tile in my_units])
+    # debug(f"I have {len(my_tiles)} tiles, {len(my_units)} unit tiles, {sum(units for _,_,units,_ in my_units)} units")
+
+    for v, units, tile in my_units:
+        target = Vect(random.randrange(0, width), random.randrange(0, height))
+        actions.append(move(units, v, target))
 
     spawn_units = my_matter//10
     if my_first_spawn_tile and spawn_units:
-        actions.append(spawn(spawn_units, my_first_spawn_tile.x, my_first_spawn_tile.y))
+        actions.append(spawn(spawn_units, my_first_spawn_tile))
 
-    # print("WAIT")
     print(";".join(actions))
