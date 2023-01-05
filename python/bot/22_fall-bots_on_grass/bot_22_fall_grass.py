@@ -2,6 +2,7 @@ import dataclasses
 import math
 import random
 import sys
+from collections import deque
 from typing import Optional
 
 random.seed(0)
@@ -87,6 +88,8 @@ def get_tile(v):
 
 width, height = [int(i) for i in input().split()]
 i_turn = 0
+n_my_tiles_history = deque()
+n_opp_tiles_history = deque()
 
 while True:
     actions = []
@@ -94,6 +97,7 @@ while True:
     map = []
     my_tiles = []
     non_my_tiles = []
+    opp_tiles = []
     my_units = []
     my_recyclers = []
 
@@ -116,8 +120,18 @@ while True:
                     my_recyclers.append(tile)
             else:
                 non_my_tiles.append(tile)
+                if tile.owner == 0:
+                    opp_tiles.append(tile)
 
         map.append(map_row)
+
+    if len(n_my_tiles_history) >= 2:
+        n_my_tiles_history.popleft()
+    n_my_tiles_history.append(len(my_tiles))
+    if len(n_opp_tiles_history) >= 3:
+        n_opp_tiles_history.popleft()
+    n_opp_tiles_history.append(len(opp_tiles))
+    # debug(f"{n_my_tiles_history=}, {n_opp_tiles_history=}")
 
     # debug(my_matter, opp_matter)
     # debug([(tile.v.x, tile.v.y, tile.units) for tile in my_units])
@@ -150,14 +164,19 @@ while True:
 
     possible_build_tiles = [tile for tile in my_tiles if tile.can_build]
     n_recycler_to_build = min(N_OF_WANTED_RECYCLERS - len(my_recyclers), len(possible_build_tiles), tens_of_matter)
-    if n_recycler_to_build and len(my_tiles) >= 7 and len(spawn_candidates_no_units) >= 4 and i_turn <= 150:
+    all_turns_same_n_my_tiles = len(n_my_tiles_history) and all(n == n_my_tiles_history[0] for n in n_my_tiles_history)
+    all_turns_same_n_opp_tiles = len(n_opp_tiles_history) and all(n == n_opp_tiles_history[0] for n in n_opp_tiles_history)
+    if n_recycler_to_build and len(my_tiles) >= 7 and len(spawn_candidates_no_units) >= 4 and i_turn <= 150 \
+            and (not all_turns_same_n_my_tiles and not all_turns_same_n_opp_tiles):
         tiles_to_build_on = random.sample(possible_build_tiles, n_recycler_to_build)
         for tile_to_build_on in tiles_to_build_on:
             actions.append(build(tile_to_build_on.v))
             my_actual_matter -= 10
+    else:
+        # debug(f"not building. {n_recycler_to_build=} {len(my_tiles)=} {len(spawn_candidates_no_units)=} {all_turns_same_n_my_tiles=} {all_turns_same_n_opp_tiles=}")
+        pass
 
     spawn_units = my_actual_matter // 10
-    # todo fix not spawn where i try to build - but is it error or just silent?
     if spawn_units:
         if len(spawn_candidates_no_units):
             spawn_candidates = spawn_candidates_no_units
