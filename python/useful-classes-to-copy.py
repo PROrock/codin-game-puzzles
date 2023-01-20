@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import math
 import sys
+from abc import ABC, abstractmethod
 from collections import deque
 from typing import Optional, List
 
@@ -144,32 +145,35 @@ class Line:
 
 
 # TODO complete this WIP
+# one example of kind of implemented (not inherited) Node: see water_jug_riddle.py
 @dataclasses.dataclass(frozen=True)
-class Node:
+class Node(ABC):
+    state: object
     action: object
     n_steps: int = 0
     prev_node: Optional[Node] = None
 
+    def __repr__(self):
+        return f"N({self.state}, {self.action}, {self.n_steps})"
+
+    @abstractmethod
     def expand(self) -> List[Node]:
-        # todo forward reference from future
         pass
 
+    @abstractmethod
     def is_goal(self) -> bool:
         pass
 
 
 class Search:
-    def __init__(self):
-        # todo
-        pass
-
-    def search(self) -> Optional[Node]:
-        visited = set()
-        queue = deque([self._get_start_node()])  # todo or pass in to search method as param?
+    def search(self, init_state) -> Optional[Node]:
+        """Breadth-first search from init_state to goal"""
+        visited_states = set()
+        queue = deque([self._get_start_node(init_state)])
 
         while queue:
             node = queue.popleft()
-            if node not in visited:
+            if node.state not in visited_states:
                 if node.is_goal():
                     self.debug(f"found solution {node}")
                     # todo or return also list of actions chronologically? so it is less dependent on implementation of Node?
@@ -177,15 +181,19 @@ class Search:
 
                 new_nodes = node.expand()
                 queue.extend(new_nodes)
-                visited.union(new_nodes)
+                visited_states.add(node.state)
 
-        else:
-            # todo not found
-            self.debug("goal not reached")
-            return None
+                debug(node, new_nodes)
+            else:
+                debug(f"{node} already visited before!")
 
-    def _get_start_node(self) -> Node:
-        pass
+        self.debug("goal not reached")
+        return None
 
-    def debug(self, *texts):
+    @staticmethod
+    def _get_start_node(init_state) -> Node:
+        return Node(None, init_state)
+
+    @staticmethod
+    def debug(*texts):
         return print(*texts, file=sys.stderr, flush=True)
