@@ -141,7 +141,7 @@ class Line:
 
 # todo create a Graph object? for start you can see python/medium/the-lost-files/main.py
 # todo create a Tree object? potentially with search functions?
-# todo create few GENERAL! algorithms/strategies like A*,MinMax,...
+# todo create few GENERAL! algorithms/strategies like A*,MinMax,... (maybe even depth-first, breadth-first, depth-iterative-restarts, ...?)
 
 
 # TODO complete this WIP
