@@ -1,0 +1,3 @@
+# 2305 spring bot contest - Notes, todos, data, ...
+
+## time spent
