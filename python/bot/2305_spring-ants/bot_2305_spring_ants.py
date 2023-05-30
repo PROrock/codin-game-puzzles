@@ -2,9 +2,11 @@ import enum
 import sys
 from abc import ABC, abstractmethod
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, List
+
+EGG_DIST_THRES = 3
 
 
 def debug(*s):
@@ -23,17 +25,11 @@ class Cell:
     id: int
     type: Type
     init_resources: int
-    neighs: tuple
+    neighs: tuple = field(repr=False)
     dist: int
-
-
-@dataclass(frozen=True)
-class CellState:
-    id: int
-    resources: int
-    my_ants: int
-    opp_ants: int
-    cell: Cell
+    resources: Optional[int]
+    my_ants: Optional[int]
+    opp_ants: Optional[int]
 
 
 class Action:
@@ -73,7 +69,7 @@ class HexNode(Node):
         return f"HN({self.cell}, {self.dist})"
 
     def expand(self) -> List["Node"]:
-        return [HexNode(cells[neigh], self.dist+1) for neigh in self.cell.neighs if neigh]
+        return [HexNode(cells[neigh], self.dist+1) for neigh in self.cell.neighs if neigh is not None]
 
     def process(self):
         self.cell.dist = self.dist
@@ -125,7 +121,7 @@ for i in range(number_of_cells):
     # initial_resources: the initial amount of eggs/crystals on this cell
     # neigh_0: the index of the neighbouring cell for each direction
     _type, initial_resources, *neighs = [int(j) for j in input().split()]
-    cells[i] = Cell(i, Type(_type), initial_resources, tuple([None if n == -1 else n for n in neighs]), -1)
+    cells[i] = Cell(i, Type(_type), initial_resources, tuple([None if n == -1 else n for n in neighs]), -1, None, None, None)
 number_of_bases = int(input())
 my_bases = [int(i) for i in input().split()]
 my_base = my_bases[0]
@@ -140,15 +136,15 @@ DistToBaseTraverse().search(cells[my_base])
 def act():
     global target_cell, msg
     actions = []
-    if target_cell is None or not cell_states[target_cell.id].resources:
-        resources = [cell_state for cell_state in cell_states.values() if cell_state.resources]
-        eggs = [cell_state for cell_state in resources if cell_state.cell.type == Type.EGG]
-        if len(eggs):
-            target_cell = max(eggs, key=lambda state: state.resources)
+    if target_cell is None or not cells[target_cell.id].resources:
+        resources = [cell for cell in cells.values() if cell.resources]
+        eggs = sorted([cell for cell in resources if cell.type == Type.EGG], key=lambda c: c.dist)
+        if len(eggs) and eggs[0].dist < EGG_DIST_THRES:
+            target_cell = eggs[0]
             msg = f"EGG {target_cell}"
         else:
-            crystals = [cell_state for cell_state in resources if cell_state.cell.type == Type.CRYSTAL]
-            target_cell = max(crystals, key=lambda state: state.resources)
+            crystals = [cell for cell in resources if cell.type == Type.CRYSTAL]
+            target_cell = min(crystals, key=lambda c: c.dist)
             msg = f"CRY {target_cell}"
     actions.append(Action.line(my_base, target_cell.id, 1))
     actions.append(Action.message(msg))
@@ -157,13 +153,13 @@ def act():
 
 # game loop
 while True:
-    cell_states = {}
     for i in range(number_of_cells):
         # resources: the current amount of eggs/crystals on this cell
         # my_ants: the amount of your ants on this cell
         # opp_ants: the amount of opponent ants on this cell
         resources, my_ants, opp_ants = [int(j) for j in input().split()]
-        cell_states[i] = CellState(i, resources, my_ants, opp_ants, cells[i])
+        cell = cells[i]
+        cell.resources, cell.my_ants, cell.opp_ants = resources, my_ants, opp_ants
 
     actions = act()
     print(";".join(actions))
