@@ -54,7 +54,7 @@ opp_bases = [int(i) for i in input().split()]
 # debug(f"{opp_bases=}")
 
 my_base = my_bases[0]
-target_crystal = None
+target_cell = None
 # game loop
 while True:
     cell_states = {}
@@ -65,9 +65,14 @@ while True:
         resources, my_ants, opp_ants = [int(j) for j in input().split()]
         cell_states[i] = CellState(i, resources, my_ants, opp_ants, cells[i])
 
-    if target_crystal is None or not cell_states[target_crystal.id].resources:
-        crystals = [cell_state for cell_state in cell_states.values() if cell_state.resources and cell_state.cell.type == Type.CRYSTAL]
-        target_crystal = max(crystals, key=lambda state: state.resources)
+    if target_cell is None or not cell_states[target_cell.id].resources:
+        resources = [cell_state for cell_state in cell_states.values() if cell_state.resources]
+        eggs = [cell_state for cell_state in resources if cell_state.cell.type == Type.EGG]
+        if len(eggs):
+            target_cell = max(eggs, key=lambda state: state.resources)
+        else:
+            crystals = [cell_state for cell_state in resources if cell_state.cell.type == Type.CRYSTAL]
+            target_cell = max(crystals, key=lambda state: state.resources)
 
-    print(Action.line(my_base, target_crystal.id, 1))
+    print(Action.line(my_base, target_cell.id, 1))
     # WAIT | LINE <sourceIdx> <targetIdx> <strength> | BEACON <cellIdx> <strength> | MESSAGE <text>
