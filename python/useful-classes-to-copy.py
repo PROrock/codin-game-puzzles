@@ -183,6 +183,7 @@ class Search:
                 queue.extend(new_nodes)
                 visited_states.add(node.state)
 
+                # todo use consitent debug method!
                 debug(node, new_nodes)
             else:
                 debug(f"{node} already visited before!")
