@@ -7,7 +7,8 @@ from enum import Enum
 from typing import Optional, List
 
 EGG_DIST_THRES = 3
-
+PARALLEL_CRYSTALS = 2
+TARGET_BOOST_MY_ANTS_THRES = 2
 
 def debug(*s):
     print(*s, file=sys.stderr, flush=True)
@@ -33,6 +34,9 @@ class Cell:
 
 
 class Action:
+    @staticmethod
+    def beacon(target_id, strength):
+        return f"BEACON {target_id} {strength}"
     @staticmethod
     def line(source_id, target_id, strength):
         return f"LINE {source_id} {target_id} {strength}"
@@ -110,8 +114,7 @@ class DistToBaseTraverse(BreadthFirstTraverse):
         return HexNode(init_state, 0)
 
 
-target_cell = None
-msg = ""
+target_cells = None
 
 cells = {}
 
@@ -134,20 +137,24 @@ DistToBaseTraverse().search(cells[my_base])
 
 
 def act():
-    global target_cell, msg
+    msg = ""
     actions = []
-    if target_cell is None or not cells[target_cell.id].resources:
-        resources = [cell for cell in cells.values() if cell.resources]
-        eggs = sorted([cell for cell in resources if cell.type == Type.EGG], key=lambda c: c.dist)
-        if len(eggs) and eggs[0].dist < EGG_DIST_THRES:
-            target_cell = eggs[0]
-            msg = f"EGG {target_cell}"
-        else:
-            crystals = [cell for cell in resources if cell.type == Type.CRYSTAL]
-            target_cell = min(crystals, key=lambda c: c.dist)
-            msg = f"CRY {target_cell}"
-    actions.append(Action.line(my_base, target_cell.id, 1))
+    resources = [cell for cell in cells.values() if cell.resources]
+    # XXX: no need for sorted now
+    eggs = sorted([cell for cell in resources if cell.type == Type.EGG and cell.dist < EGG_DIST_THRES], key=lambda c: c.dist)
+    if len(eggs):
+        target_cells = eggs
+        msg = f"{len(target_cells)} EGGs: {target_cells}"
+    else:
+        crystals = sorted([cell for cell in resources if cell.type == Type.CRYSTAL], key=lambda c: c.dist)
+        target_cells = crystals[:PARALLEL_CRYSTALS]
+        msg = f"{len(target_cells)} CRY {target_cells}"
+
     actions.append(Action.message(msg))
+    for target_cell in target_cells:
+        actions.append(Action.line(my_base, target_cell.id, 2))
+        if target_cell.my_ants < TARGET_BOOST_MY_ANTS_THRES:
+            actions.append(Action.beacon(target_cell.id, 3))
     return actions
 
 
