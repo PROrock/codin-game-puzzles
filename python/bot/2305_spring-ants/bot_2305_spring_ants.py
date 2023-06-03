@@ -8,7 +8,7 @@ from typing import Optional, List
 
 EGG_DIST_THRES = 3
 IGNORE_EGGS_THRES = 100
-PARALLEL_CRYSTALS = 2
+PARALLEL_CRYSTALS = 3
 TARGET_BOOST_MY_ANTS_THRES = 2
 
 
@@ -96,7 +96,7 @@ class BreadthFirstTraverse(ABC):
 
                 # debug(node, new_nodes)
             # else:
-                # debug(f"{node} already visited before!")
+            # debug(f"{node} already visited before!")
 
         # self.debug("goal not reached")
         return None
@@ -116,7 +116,6 @@ class DistToBaseTraverse(BreadthFirstTraverse):
 
 
 target_cells = None
-
 cells = {}
 
 number_of_cells = int(input())  # amount of hexagonal cells in this map
@@ -144,16 +143,19 @@ def act_on_one_base(my_base_idx):
     actions = []
     resources = [cell for cell in cells.values() if cell.resources]
     # XXX: no need for sorted now
-    eggs = sorted([cell for cell in resources if cell.type == Type.EGG and cell.dist[my_base_idx] < EGG_DIST_THRES], key=lambda c: c.dist[my_base_idx])
+    target_cells = []
+    egg_dist_thres = compute_egg_dist_thres()
+    eggs = sorted([cell for cell in resources if cell.type == Type.EGG and cell.dist[my_base_idx] < egg_dist_thres], key=lambda c: c.dist[my_base_idx])
     if len(eggs) and total_crystals > IGNORE_EGGS_THRES:
-        target_cells = eggs
-        msg = f"{len(target_cells)} EGGs: {[c.id for c in target_cells]}"
-    else:
+        target_cells.extend(eggs)
+        # msg = f"{len(target_cells)} EGGs: {[c.id for c in target_cells]}"
+    if len(target_cells) < PARALLEL_CRYSTALS:
         crystals = sorted([cell for cell in resources if cell.type == Type.CRYSTAL], key=lambda c: c.dist[my_base_idx])
-        target_cells = crystals[:PARALLEL_CRYSTALS]
-        msg = f"{len(target_cells)} CRY {[c.id for c in target_cells]}"
+        target_cells.extend(crystals)
+        # msg = f"{len(target_cells)} CRY {[c.id for c in target_cells]}"
+    target_cells = target_cells[:PARALLEL_CRYSTALS]
 
-    actions.append(Action.message(msg))
+    # actions.append(Action.message(msg))
     for target_cell in target_cells:
         actions.append(Action.line(my_base, target_cell.id, 2))
         for neigh_id in target_cell.neighs:
@@ -162,6 +164,10 @@ def act_on_one_base(my_base_idx):
         if target_cell.my_ants < TARGET_BOOST_MY_ANTS_THRES:
             actions.append(Action.beacon(target_cell.id, 3))
     return actions
+
+
+def compute_egg_dist_thres():
+    return total_crystals // total_my_ants
 
 
 # game loop
@@ -175,8 +181,8 @@ while True:
     total_crystals = sum([c.resources for c in resources if c.type == Type.CRYSTAL])
     half_total_crystals = total_crystals/2
     total_eggs = sum([c.resources for c in resources if c.type == Type.EGG])
-
-    debug(total_crystals, total_eggs)
+    total_my_ants = sum([c.my_ants for c in cells.values()])
+    debug(total_crystals, total_eggs, total_my_ants, compute_egg_dist_thres())
 
     actions = act()
     print(";".join(actions))
