@@ -26,7 +26,6 @@ class Type(Enum):
 class Cell:
     id: int
     type: Type
-    init_resources: int
     neighs: tuple = field(repr=False)
     resources: Optional[int]
     my_ants: Optional[int]
@@ -121,11 +120,8 @@ cells = {}
 
 number_of_cells = int(input())  # amount of hexagonal cells in this map
 for i in range(number_of_cells):
-    # _type: 0 for empty, 1 for eggs, 2 for crystal
-    # initial_resources: the initial amount of eggs/crystals on this cell
-    # neigh_0: the index of the neighbouring cell for each direction
     _type, initial_resources, *neighs = [int(j) for j in input().split()]
-    cells[i] = Cell(i, Type(_type), initial_resources, tuple([n for n in neighs if n != -1]), None, None, None)
+    cells[i] = Cell(i, Type(_type), tuple([n for n in neighs if n != -1]), initial_resources, None, None)
 number_of_bases = int(input())
 my_bases = [int(i) for i in input().split()]
 opp_bases = [int(i) for i in input().split()]
@@ -167,11 +163,8 @@ def act_on_one_base(my_base_idx):
 # game loop
 while True:
     for i in range(number_of_cells):
-        # resources: the current amount of eggs/crystals on this cell
-        # my_ants: the amount of your ants on this cell
-        # opp_ants: the amount of opponent ants on this cell
-        resources, my_ants, opp_ants = [int(j) for j in input().split()]
         cell = cells[i]
+        resources, my_ants, opp_ants = [int(j) for j in input().split()]
         cell.resources, cell.my_ants, cell.opp_ants = resources, my_ants, opp_ants
 
     actions = act()
