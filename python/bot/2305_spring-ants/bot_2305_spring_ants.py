@@ -10,6 +10,7 @@ EGG_DIST_THRES = 3
 PARALLEL_CRYSTALS = 2
 TARGET_BOOST_MY_ANTS_THRES = 2
 
+
 def debug(*s):
     print(*s, file=sys.stderr, flush=True)
 
@@ -27,10 +28,10 @@ class Cell:
     type: Type
     init_resources: int
     neighs: tuple = field(repr=False)
-    dist: int
     resources: Optional[int]
     my_ants: Optional[int]
     opp_ants: Optional[int]
+    dist: List[int] = field(default_factory=list)
 
 
 class Action:
@@ -76,7 +77,7 @@ class HexNode(Node):
         return [HexNode(cells[neigh], self.dist+1) for neigh in self.cell.neighs if neigh is not None]
 
     def process(self):
-        self.cell.dist = self.dist
+        self.cell.dist.append(self.dist)
 
 
 class BreadthFirstTraverse(ABC):
@@ -93,11 +94,11 @@ class BreadthFirstTraverse(ABC):
                 queue.extend(new_nodes)
                 visited_states.add(node.state)
 
-                debug(node, new_nodes)
-            else:
-                debug(f"{node} already visited before!")
+                # debug(node, new_nodes)
+            # else:
+                # debug(f"{node} already visited before!")
 
-        self.debug("goal not reached")
+        # self.debug("goal not reached")
         return None
 
     @abstractmethod
@@ -124,31 +125,36 @@ for i in range(number_of_cells):
     # initial_resources: the initial amount of eggs/crystals on this cell
     # neigh_0: the index of the neighbouring cell for each direction
     _type, initial_resources, *neighs = [int(j) for j in input().split()]
-    cells[i] = Cell(i, Type(_type), initial_resources, tuple([None if n == -1 else n for n in neighs]), -1, None, None, None)
+    cells[i] = Cell(i, Type(_type), initial_resources, tuple([n for n in neighs if n != -1]), None, None, None)
 number_of_bases = int(input())
 my_bases = [int(i) for i in input().split()]
-my_base = my_bases[0]
 opp_bases = [int(i) for i in input().split()]
-# debug(f"{my_bases=}")
-# debug(f"{opp_bases=}")
 
-# compute dist to my base
-DistToBaseTraverse().search(cells[my_base])
+# compute dist to my bases
+for my_base in my_bases:
+    DistToBaseTraverse().search(cells[my_base])
 
 
 def act():
-    msg = ""
+    actions = []
+    for idx, _ in enumerate(my_bases):
+        actions.extend(act_on_one_base(idx))
+    return actions
+
+
+def act_on_one_base(my_base_idx):
+    my_base = my_bases[my_base_idx]
     actions = []
     resources = [cell for cell in cells.values() if cell.resources]
     # XXX: no need for sorted now
-    eggs = sorted([cell for cell in resources if cell.type == Type.EGG and cell.dist < EGG_DIST_THRES], key=lambda c: c.dist)
+    eggs = sorted([cell for cell in resources if cell.type == Type.EGG and cell.dist[my_base_idx] < EGG_DIST_THRES], key=lambda c: c.dist[my_base_idx])
     if len(eggs):
         target_cells = eggs
-        msg = f"{len(target_cells)} EGGs: {target_cells}"
+        msg = f"{len(target_cells)} EGGs: {[c.id for c in target_cells]}"
     else:
-        crystals = sorted([cell for cell in resources if cell.type == Type.CRYSTAL], key=lambda c: c.dist)
+        crystals = sorted([cell for cell in resources if cell.type == Type.CRYSTAL], key=lambda c: c.dist[my_base_idx])
         target_cells = crystals[:PARALLEL_CRYSTALS]
-        msg = f"{len(target_cells)} CRY {target_cells}"
+        msg = f"{len(target_cells)} CRY {[c.id for c in target_cells]}"
 
     actions.append(Action.message(msg))
     for target_cell in target_cells:
