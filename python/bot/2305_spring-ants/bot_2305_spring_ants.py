@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Optional, List
 
 EGG_DIST_THRES = 3
+IGNORE_EGGS_THRES = 100
 PARALLEL_CRYSTALS = 2
 TARGET_BOOST_MY_ANTS_THRES = 2
 
@@ -144,7 +145,7 @@ def act_on_one_base(my_base_idx):
     resources = [cell for cell in cells.values() if cell.resources]
     # XXX: no need for sorted now
     eggs = sorted([cell for cell in resources if cell.type == Type.EGG and cell.dist[my_base_idx] < EGG_DIST_THRES], key=lambda c: c.dist[my_base_idx])
-    if len(eggs):
+    if len(eggs) and total_crystals > IGNORE_EGGS_THRES:
         target_cells = eggs
         msg = f"{len(target_cells)} EGGs: {[c.id for c in target_cells]}"
     else:
@@ -169,6 +170,13 @@ while True:
         cell = cells[i]
         resources, my_ants, opp_ants = [int(j) for j in input().split()]
         cell.resources, cell.my_ants, cell.opp_ants = resources, my_ants, opp_ants
+
+    resources = [c for c in cells.values() if c.resources]
+    total_crystals = sum([c.resources for c in resources if c.type == Type.CRYSTAL])
+    half_total_crystals = total_crystals/2
+    total_eggs = sum([c.resources for c in resources if c.type == Type.EGG])
+
+    debug(total_crystals, total_eggs)
 
     actions = act()
     print(";".join(actions))
