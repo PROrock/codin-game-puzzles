@@ -155,6 +155,9 @@ def act_on_one_base(my_base_idx):
     actions.append(Action.message(msg))
     for target_cell in target_cells:
         actions.append(Action.line(my_base, target_cell.id, 2))
+        for neigh_id in target_cell.neighs:
+            if neigh_id not in target_cells and cells[neigh_id].resources:
+                actions.append(Action.line(target_cell.id, neigh_id, 2))
         if target_cell.my_ants < TARGET_BOOST_MY_ANTS_THRES:
             actions.append(Action.beacon(target_cell.id, 3))
     return actions
