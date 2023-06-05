@@ -170,8 +170,8 @@ def compute_egg_dist_thres():
     return total_crystals // total_my_ants
 
 
-# game loop
 while True:
+    myScore, oppScore = [int(j) for j in input().split()]
     for i in range(number_of_cells):
         cell = cells[i]
         resources, my_ants, opp_ants = [int(j) for j in input().split()]
