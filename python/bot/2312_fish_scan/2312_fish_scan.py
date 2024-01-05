@@ -38,7 +38,7 @@ class Vect(NamedTuple):
 
     def normalize(self):
         """Normalize vector to be able to compare it with other vectors (possibly multiplies of this one)"""
-        gcd_xy = gcd(self.x, self.y)
+        gcd_xy = math.gcd(self.x, self.y)
         if gcd_xy == 0 or gcd_xy == 1:
             return self
         return Vect(self.x / gcd_xy, self.y / gcd_xy)
@@ -129,6 +129,8 @@ while True:
         drone_id, creature_id = [int(j) for j in input().split()]
         scanned_creatures_ids.add(drone_id)
 
+    # todo here aby coor
+    # visible_creature =
     visible_creature_count = int(input())
     for i in range(visible_creature_count):
         creature_id, creature_x, creature_y, creature_vx, creature_vy = [int(j) for j in input().split()]
@@ -144,7 +146,7 @@ while True:
         # ignore
 
     for i in range(my_drone_count):
-
+        # set([for creature in creatures if creature.coor is not None])
         # Write an action using print
         # To debug: print("Debug messages...", file=sys.stderr, flush=True)
 
