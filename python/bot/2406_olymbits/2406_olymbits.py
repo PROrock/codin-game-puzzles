@@ -24,18 +24,19 @@ class Game:
         raise NotImplementedError()
 
 
+@dataclasses.dataclass
 class HurdlesGame(Game):
     my_id: int
-    runners: List[int]
-    stuns: List[int]
+    runners: List[int] = dataclasses.field(init=False)
+    stuns: List[int] = dataclasses.field(init=False)
 
     hurdle: str = "#"
-    spaces_to_action: Dict[int, str] = {
+    spaces_to_action: Dict[int, str] = dataclasses.field(init=False, default_factory=lambda: {
         1: "LEFT",
-        2: "DOWN",
-        # 2: "UP", # + jump
+        # 2: "DOWN",
+        2: "UP",  # + jump
         3: "RIGHT",
-    }
+    })
     stun_penalty: int = 2
     winning_dist_thres: int = 8
     losing_dist_thres: int = 8
@@ -75,11 +76,23 @@ class HurdlesGame(Game):
         return self.runners[self.my_id] - furthest_opponent
 
 
-# todo parse code
+player_idx = int(input())
+nb_games = int(input())
 
-game = HurdlesGame()
-game.update()
-game.find_optimal_action_for_this_play()
+# game loop
+while True:
+    for i in range(3):
+        score_info = input()
+    for i in range(nb_games):
+        inputs = input().split()
+        gpu = inputs[0]
+        registers = [int(i) for i in inputs[1:]]
+
+        game = HurdlesGame(gpu, registers, player_idx)
+        game.update(gpu, registers)
+        action = game.find_optimal_action_for_this_play()
+    print(action)
+
 
 # multiple games
 # replace DOWN with UP in dict
