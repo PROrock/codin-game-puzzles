@@ -36,6 +36,9 @@ class HurdlesGame(Game):
         # 2: "UP", # + jump
         3: "RIGHT",
     }
+    stun_penalty: int = 2
+    winning_dist_thres: int = 8
+    losing_dist_thres: int = 8
 
     def post_update(self):
         self.runners = self.registers[:3]
@@ -52,10 +55,34 @@ class HurdlesGame(Game):
             return "UP"
         return self.spaces_to_action.get(distance_to_hurdle-1, "RIGHT")
 
+    def find_preferred_action_for_this_play(self):
+        if game.gpu == "GAME_OVER":
+            return None
 
-# todo handle game over
+        if self.stuns[self.my_id] > 0:
+            return None
+
+        if self.losing_dist_thres >= self.compute_leading_dist() >= self.winning_dist_thres:
+            return None
+
+        return self.find_optimal_action_for_this_play()
+
+    def compute_leading_dist(self):
+        # todo take stuns into account - stun-aware dist
+        # stun_aware_position =
+        opponents = self.runners[:self.my_id] + self.runners[self.my_id+1:]
+        furthest_opponent = max(opponents)
+        return self.runners[self.my_id] - furthest_opponent
+
+
 # todo parse code
 
 game = HurdlesGame()
 game.update()
 game.find_optimal_action_for_this_play()
+
+# multiple games
+# replace DOWN with UP in dict
+# naive - get optimal for all and take the most frequent action
+# take leading dist into account and ignore totally won and lost games
+# return preferred action instead of optimal - return None, if abstaining from decision
