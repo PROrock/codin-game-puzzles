@@ -7,3 +7,4 @@ Time spent programming:
 20.6. 831 - 845 - multi game ideas
 20.6. 2250 - 2325 - parse code, wood II completed
 22.6. 2154 - 2227 - optimal for lowest score game - doesn't work for boss
+22.6. 2227 - 2320 - trying most common prefered action - to little success

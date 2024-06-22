@@ -1,7 +1,10 @@
 import dataclasses
 import operator
 import sys
+from collections import Counter
 from typing import List, Dict
+
+START_BALANCING_TURN = 70
 
 
 def debug(*s):
@@ -88,7 +91,7 @@ class HurdlesGame(Game):
 
 
 def parse_score_info(score_info):
-    score_info = score_info.split()
+    score_info = [int(i) for i in score_info.split()]
     score_info = score_info[1:]
     medal_amounts = []
     for i in range(nb_games):
@@ -104,6 +107,7 @@ def argmin(iter):
 player_idx = int(input())
 nb_games = int(input())
 games = [None] * nb_games
+i_turn = 0
 
 # game loop
 while True:
@@ -120,13 +124,28 @@ while True:
         game.update(gpu, registers)
         games[i] = game
 
-    scores = [m.compute_score() for m in medal_amounts]
-    min_score_game_idx = argmin(scores)
-    action = games[min_score_game_idx].find_optimal_action_for_this_play()
+
     debug(medal_amounts)
-    debug(scores)
-    debug(min_score_game_idx)
+    debug([g.find_optimal_action_for_this_play() for g in games])
+    actions = [g.find_preferred_action_for_this_play() for g in games]
+    debug(actions)
+
+    if i_turn < START_BALANCING_TURN:
+        filtered_actions = [a for a in actions if a is not None]
+        action = None
+        if len(filtered_actions):
+            action = Counter(filtered_actions).most_common(1)[0][0]
+        if action is None:
+            action = "UP"
+    else:
+        scores = [m.compute_score() for m in medal_amounts]
+        min_score_game_idx = argmin(scores)
+        action = games[min_score_game_idx].find_optimal_action_for_this_play()
+        debug(scores)
+        debug(min_score_game_idx)
+
     print(action)
+    i_turn += 1
 
 
 # multiple games
