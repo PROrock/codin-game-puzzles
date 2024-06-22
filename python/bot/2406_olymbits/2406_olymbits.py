@@ -1,10 +1,21 @@
 import dataclasses
+import operator
 import sys
 from typing import List, Dict
 
 
 def debug(*s):
     print(*s, file=sys.stderr, flush=True)
+
+
+@dataclasses.dataclass
+class MedalAmounts:
+    n_golds: int
+    n_silvers: int
+    n_bronzes: int
+
+    def compute_score(self):
+        return 3*self.n_golds+self.n_silvers
 
 
 @dataclasses.dataclass
@@ -76,13 +87,30 @@ class HurdlesGame(Game):
         return self.runners[self.my_id] - furthest_opponent
 
 
+def parse_score_info(score_info):
+    score_info = score_info.split()
+    score_info = score_info[1:]
+    medal_amounts = []
+    for i in range(nb_games):
+        numbers, score_info = score_info[:3], score_info[3:]
+        medal_amounts.append(MedalAmounts(*numbers))
+    return medal_amounts
+
+
+def argmin(iter):
+    return min(enumerate(iter), key=operator.itemgetter(1))[0]
+
+
 player_idx = int(input())
 nb_games = int(input())
+games = [None] * nb_games
 
 # game loop
 while True:
     for i in range(3):
         score_info = input()
+        if i == player_idx:
+            medal_amounts = parse_score_info(score_info)
     for i in range(nb_games):
         inputs = input().split()
         gpu = inputs[0]
@@ -90,12 +118,18 @@ while True:
 
         game = HurdlesGame(gpu, registers, player_idx)
         game.update(gpu, registers)
-        action = game.find_optimal_action_for_this_play()
+        games[i] = game
+
+    scores = [m.compute_score() for m in medal_amounts]
+    min_score_game_idx = argmin(scores)
+    action = games[min_score_game_idx].find_optimal_action_for_this_play()
+    debug(medal_amounts)
+    debug(scores)
+    debug(min_score_game_idx)
     print(action)
 
 
 # multiple games
-# replace DOWN with UP in dict
 # naive - get optimal for all and take the most frequent action
 # take leading dist into account and ignore totally won and lost games
 # return preferred action instead of optimal - return None, if abstaining from decision
