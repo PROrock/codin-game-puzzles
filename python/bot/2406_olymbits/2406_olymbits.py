@@ -2,10 +2,10 @@ import operator
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 START_BALANCING_TURN = 70
-
+ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT"]
 
 def debug(*s):
     print(*s, file=sys.stderr, flush=True)
@@ -38,6 +38,18 @@ class Game:
 
     def find_preferred_action_for_this_play(self):
         raise NotImplementedError()
+
+
+@dataclass
+class DummyGame(Game):
+    def post_update(self, registers):
+        pass  # dummy impl
+
+    def find_optimal_action_for_this_play(self):
+        return "LEFT"
+
+    def find_preferred_action_for_this_play(self):
+        return None
 
 
 @dataclass
@@ -98,6 +110,28 @@ class HurdlesGame(Game):
         return self.runners[self.my_id] - furthest_opponent
 
 
+@dataclass
+class DivingGame(Game):
+    points: List[int] = field(init=False)
+    combos: List[int] = field(init=False)
+    letter_to_action: Dict[str, str] = field(init=False, default_factory=lambda: {a[0]: a for a in ACTIONS})
+
+    def post_update(self, registers):
+        self.points = registers[:3]
+        self.combos = registers[3:6]
+
+    def find_optimal_action_for_this_play(self):
+        if game.gpu == "GAME_OVER":
+            return None
+        current_letter = game.gpu[0]
+        return self.letter_to_action[current_letter]
+
+    def find_preferred_action_for_this_play(self):
+        if game.gpu == "GAME_OVER":
+            return None
+        return self.find_optimal_action_for_this_play()
+
+
 def parse_score_info(score_info):
     score_info = [int(i) for i in score_info.split()]
     score_info = score_info[1:]
@@ -114,7 +148,7 @@ def argmin(iter):
 
 player_idx = int(input())
 nb_games = int(input())
-games: List[Optional[Game]] = [None] * nb_games
+games: List[Game] = [HurdlesGame(player_idx), DummyGame(player_idx), DummyGame(player_idx), DivingGame(player_idx)]
 medal_amounts = []
 i_turn = 0
 
@@ -128,11 +162,11 @@ while True:
         gpu = inputs[0]
         registers = [int(i) for i in inputs[1:]]
 
-        game = HurdlesGame(player_idx)
+        game = games[i]
         game.update(gpu, registers)
-        games[i] = game
 
 
+    debug(games)
     debug(medal_amounts)
     debug([g.find_optimal_action_for_this_play() for g in games])
     actions = [g.find_preferred_action_for_this_play() for g in games]
@@ -149,6 +183,8 @@ while True:
         scores = [m.compute_score() for m in medal_amounts]
         min_score_game_idx = argmin(scores)
         action = games[min_score_game_idx].find_optimal_action_for_this_play()
+        if action is None:
+            action = "DOWN"
         debug(scores)
         debug(min_score_game_idx)
 
