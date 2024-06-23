@@ -3,7 +3,7 @@ import operator
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 START_BALANCING_TURN = 70
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT"]
@@ -159,7 +159,7 @@ class Vect:
 class ArcheryGame(Game):
     coordinates: List[Vect] = field(init=False)
     bulls_eye: Vect = Vect(0, 0)
-    diff_signs_to_action: Dict[int, str] = field(init=False, repr=False, default_factory=lambda: {
+    diff_signs_to_action: Dict[Tuple[bool, int], str] = field(init=False, repr=False, default_factory=lambda: {
         (True, 1): "LEFT",
         (True, -1): "RIGHT",
         (False, 1): "UP",
