@@ -10,11 +10,12 @@ Time spent programming:
 22.6. 2227 - 2320 - trying most common preferred action - to little success
 23.6. 1149 - 1203 - when 4+ spaces from hurdle, abstain from decision, it works, Wood I. completed!
 23.6. 2050 - 2111 - refactor of game inputs, diving game
-23.6. 2258 -  - diving game
+23.6. 2258 - 003 - diving and archery game implemented
 
 TODO:
-* implement optimal for archery and diving, skating is fine as it is now :-)
-
+* when 3 spaces to hurdle - abstain?
+* ignore first few archery turns?
+* ignore first/last few diving turns?
 
 # multiple hurdles games ideas:
 * take leading dist into account and ignore totally won and lost games

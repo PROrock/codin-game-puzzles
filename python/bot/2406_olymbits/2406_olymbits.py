@@ -1,3 +1,4 @@
+import math
 import operator
 import sys
 from collections import Counter
@@ -7,8 +8,14 @@ from typing import List, Dict
 START_BALANCING_TURN = 70
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT"]
 
+
 def debug(*s):
     print(*s, file=sys.stderr, flush=True)
+
+def signum(x):
+    if x > 0: return 1
+    if x < 0: return -1
+    return 0
 
 
 @dataclass
@@ -58,7 +65,7 @@ class HurdlesGame(Game):
     stuns: List[int] = field(init=False)
 
     hurdle: str = "#"
-    spaces_to_action: Dict[int, str] = field(init=False, default_factory=lambda: {
+    spaces_to_action: Dict[int, str] = field(init=False, repr=False, default_factory=lambda: {
         1: "LEFT",
         2: "DOWN",
         # 2: "UP",  # + jump
@@ -110,11 +117,82 @@ class HurdlesGame(Game):
         return self.runners[self.my_id] - furthest_opponent
 
 
+class Vect:
+    """Immutable 2D vector"""
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def l2_norm(self):
+        """
+        XXX: Consider using math.hypot(*coordinates) or math.dist(p, q), which is probably faster.
+        See https://docs.python.org/3/library/math.html#math.dist
+        For timing guide, see https://stackoverflow.com/a/24105845/2127340
+        """
+        return math.sqrt(self.x**2 + self.y**2)
+
+    def __bool__(self):
+        return True
+
+    def __repr__(self):
+        return f"V({self.x},{self.y})"
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __add__(self, other):
+        return Vect((self.x + other.x), (self.y + other.y))
+    def __sub__(self, other):
+        return Vect((self.x - other.x), (self.y - other.y))
+    def __mul__(self, multiplier):
+        return Vect(self.x * multiplier, self.y * multiplier)
+    # right multiplication to support 2 * p
+    __rmul__ = __mul__
+    def __neg__(self):
+        return Vect(-self.x, -self.y)
+
+
+@dataclass
+class ArcheryGame(Game):
+    coordinates: List[Vect] = field(init=False)
+    bulls_eye: Vect = Vect(0, 0)
+    diff_signs_to_action: Dict[int, str] = field(init=False, repr=False, default_factory=lambda: {
+        (True, 1): "LEFT",
+        (True, -1): "RIGHT",
+        (False, 1): "UP",
+        (False, -1): "DOWN",
+    })
+
+    @property
+    def my_coordinates(self):
+        return self.coordinates[self.my_id]
+
+    def post_update(self, registers):
+        self.coordinates = [Vect(x,y) for x, y in zip(registers[:5:2], registers[1:6:2])]
+
+    def find_optimal_action_for_this_play(self):
+        if game.gpu == "GAME_OVER":
+            return None
+        # current_wind = int(game.gpu[0])
+        diff_to_bulls_eye = self.my_coordinates - self.bulls_eye
+        x_is_farther = abs(diff_to_bulls_eye.x) > abs(diff_to_bulls_eye.y)
+        debug(x_is_farther, diff_to_bulls_eye)
+        return self.diff_signs_to_action.get((x_is_farther, signum(diff_to_bulls_eye.x) if x_is_farther else signum(diff_to_bulls_eye.y)))
+
+    def find_preferred_action_for_this_play(self):
+        if game.gpu == "GAME_OVER":
+            return None
+        return self.find_optimal_action_for_this_play()
+
+
 @dataclass
 class DivingGame(Game):
     points: List[int] = field(init=False)
     combos: List[int] = field(init=False)
-    letter_to_action: Dict[str, str] = field(init=False, default_factory=lambda: {a[0]: a for a in ACTIONS})
+    letter_to_action: Dict[str, str] = field(init=False, repr=False, default_factory=lambda: {a[0]: a for a in ACTIONS})
 
     def post_update(self, registers):
         self.points = registers[:3]
@@ -148,7 +226,7 @@ def argmin(iter):
 
 player_idx = int(input())
 nb_games = int(input())
-games: List[Game] = [HurdlesGame(player_idx), DummyGame(player_idx), DummyGame(player_idx), DivingGame(player_idx)]
+games: List[Game] = [HurdlesGame(player_idx), ArcheryGame(player_idx), DummyGame(player_idx), DivingGame(player_idx)]
 medal_amounts = []
 i_turn = 0
 
