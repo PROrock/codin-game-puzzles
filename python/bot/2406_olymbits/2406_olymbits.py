@@ -1,8 +1,8 @@
-import dataclasses
 import operator
 import sys
 from collections import Counter
-from typing import List, Dict
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional
 
 START_BALANCING_TURN = 70
 
@@ -11,7 +11,7 @@ def debug(*s):
     print(*s, file=sys.stderr, flush=True)
 
 
-@dataclasses.dataclass
+@dataclass
 class MedalAmounts:
     n_golds: int
     n_silvers: int
@@ -21,43 +21,44 @@ class MedalAmounts:
         return 3*self.n_golds+self.n_silvers
 
 
-@dataclasses.dataclass
+@dataclass
 class Game:
-    gpu: str
-    registers: List[int]   # 7? game-specific registers
+    my_id: int
+    gpu: str = ""
 
     def update(self, gpu, registers):
         self.gpu = gpu
-        self.registers = registers
-        self.post_update()
+        self.post_update(registers)
 
-    def post_update(self):
+    def post_update(self, registers):
         raise NotImplementedError()
 
     def find_optimal_action_for_this_play(self):
         raise NotImplementedError()
 
+    def find_preferred_action_for_this_play(self):
+        raise NotImplementedError()
 
-@dataclasses.dataclass
+
+@dataclass
 class HurdlesGame(Game):
-    my_id: int
-    runners: List[int] = dataclasses.field(init=False)
-    stuns: List[int] = dataclasses.field(init=False)
+    runners: List[int] = field(init=False)
+    stuns: List[int] = field(init=False)
 
     hurdle: str = "#"
-    spaces_to_action: Dict[int, str] = dataclasses.field(init=False, default_factory=lambda: {
+    spaces_to_action: Dict[int, str] = field(init=False, default_factory=lambda: {
         1: "LEFT",
-        # 2: "DOWN",
-        2: "UP",  # + jump
+        2: "DOWN",
+        # 2: "UP",  # + jump
         3: "RIGHT",
     })
     stun_penalty: int = 2
     winning_dist_thres: int = 8
     losing_dist_thres: int = 8
 
-    def post_update(self):
-        self.runners = self.registers[:3]
-        self.stuns = self.registers[3:6]
+    def post_update(self, registers):
+        self.runners = registers[:3]
+        self.stuns = registers[3:6]
 
     def find_optimal_action_for_this_play(self):
         if game.gpu == "GAME_OVER":
@@ -113,10 +114,10 @@ def argmin(iter):
 
 player_idx = int(input())
 nb_games = int(input())
-games = [None] * nb_games
+games: List[Optional[Game]] = [None] * nb_games
+medal_amounts = []
 i_turn = 0
 
-# game loop
 while True:
     for i in range(3):
         score_info = input()
@@ -127,7 +128,7 @@ while True:
         gpu = inputs[0]
         registers = [int(i) for i in inputs[1:]]
 
-        game = HurdlesGame(gpu, registers, player_idx)
+        game = HurdlesGame(player_idx)
         game.update(gpu, registers)
         games[i] = game
 
