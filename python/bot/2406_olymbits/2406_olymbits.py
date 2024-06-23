@@ -63,18 +63,25 @@ class HurdlesGame(Game):
         if game.gpu == "GAME_OVER":
             return "DOWN"
 
-        my_position = self.runners[self.my_id]
-        nearest_hurdle = self.gpu.find(self.hurdle, my_position + 1)
-        distance_to_hurdle = -1 if nearest_hurdle == -1 else (nearest_hurdle - my_position)
+        distance_to_hurdle = self._get_distance_to_hurdle()
         if distance_to_hurdle == 1:
             return "UP"
         return self.spaces_to_action.get(distance_to_hurdle-1, "RIGHT")
+
+    def _get_distance_to_hurdle(self):
+        my_position = self.runners[self.my_id]
+        nearest_hurdle = self.gpu.find(self.hurdle, my_position + 1)
+        distance_to_hurdle = -1 if nearest_hurdle == -1 else (nearest_hurdle - my_position)
+        return distance_to_hurdle
 
     def find_preferred_action_for_this_play(self):
         if game.gpu == "GAME_OVER":
             return None
 
         if self.stuns[self.my_id] > 0:
+            return None
+
+        if self._get_distance_to_hurdle()-1 > 3:
             return None
 
         if self.losing_dist_thres >= self.compute_leading_dist() >= self.winning_dist_thres:
@@ -147,8 +154,3 @@ while True:
     print(action)
     i_turn += 1
 
-
-# multiple games
-# naive - get optimal for all and take the most frequent action
-# take leading dist into account and ignore totally won and lost games
-# return preferred action instead of optimal - return None, if abstaining from decision
