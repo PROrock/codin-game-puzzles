@@ -1,8 +1,18 @@
+# 222995 - default
+# 447865 - loop the default pod
+
 import sys
 import math
 
-# Auto-generated code below aims at helping you parse
-# the standard input according to the problem statement.
+def debug(*s):
+    print(*s, file=sys.stderr, flush=True)
+
+
+resources=-1
+travel_routes={}
+pods={}
+buildings={}
+
 
 
 # game loop
@@ -18,8 +28,6 @@ while True:
     for i in range(num_new_buildings):
         building_properties = input()
 
-    # Write an action using print
-    # To debug: print("Debug messages...", file=sys.stderr, flush=True)
 
     # TUBE | UPGRADE | TELEPORT | POD | DESTROY | WAIT
-    print("TUBE 0 1;TUBE 0 2;POD 42 0 1 0 2 0 1 0 2")
+    print("TUBE 0 1;TUBE 0 2;POD 42 0 1 0 2 0")
