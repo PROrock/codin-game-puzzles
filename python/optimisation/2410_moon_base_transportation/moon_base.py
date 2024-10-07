@@ -1,12 +1,12 @@
 # 222995 - default
 # 447865 - loop the default pod
+# 732601 - naive tube and pod (back-and-forth in 1 segment) heuristic
 
+from collections import defaultdict
 import math
 import sys
 from dataclasses import dataclass
 from typing import Counter, NamedTuple, List
-
-I = 0
 
 
 def debug(*s):
@@ -17,7 +17,7 @@ class Tube:
     build1: int
     build2: int
     capacity: int = 1
-    
+
     def __repr__(self):
         return f"T({self.build1}-{self.build2}, c={self.capacity})"
 
@@ -27,7 +27,6 @@ class Tube:
 class Vect(NamedTuple):
     x: int
     y: int
-
 
     def __add__(self, other):
         return Vect(self.x + other.x, self.y + other.y)
@@ -48,8 +47,8 @@ class Building:
     LANDING = 0
 
     @staticmethod
-    def from_input(bulding_integers):
-        type_, id, x, y, *rest = bulding_integers
+    def from_input(building_integers):
+        type_, id, x, y, *rest = building_integers
         astronauts = Counter(rest[1:]) if rest else Counter()
         return Building(type_, id, Vect(x, y), astronauts)
 
@@ -66,20 +65,29 @@ class Pod:
         return f"POD {self.id} {' '.join([str(building) for building in self.buildings])}"
 
 
-resources=-1
-travel_lines=[]
-pods={}
-buildings={}
-landing_by_type={}
-dorm_by_type={}
+resources = -1
+travel_lines = []
+pods = {}
+buildings = {}
+landing_by_type = {}
+dorm_by_type = {}
 
 
 def buildings_by_type(buildings):
-    landing_by_type, dorm_by_type = {}, {}
+    landing_by_type, dorm_by_type = defaultdict(list), defaultdict(list)
     for building in buildings.values():
-        dict_to_add = landing_by_type if building.type_ == Building.LANDING else dorm_by_type
-        dict_to_add[building.type_] = building
+        if building.type_ == Building.LANDING:
+            for type in dict(building.astronauts.most_common()).keys():
+                landing_by_type[type].append(building)
+        else:
+            dorm_by_type[building.type_].append(building)
     return landing_by_type, dorm_by_type
+
+def build_travel_dict(travel_lines):
+    travel_dict = defaultdict(list)
+    for line in travel_lines:
+        travel_dict[line.build1].append((line.build2, line))
+    return travel_dict
 
 
 # game loop
@@ -94,8 +102,8 @@ while True:
         else:
             line = Tube(building_id_1, building_id_2, capacity)
         travel_lines.append(line)
-    travel_dict = {line1.build1: (line1.build2, line1) for line1 in travel_lines}
-        
+    travel_dict = build_travel_dict(travel_lines)
+
     num_pods = int(input())
     for i in range(num_pods):
         pod_properties = input()
@@ -108,23 +116,26 @@ while True:
         buildings[building.id] = building
     landing_by_type, dorm_by_type = buildings_by_type(buildings)
 
-
+    debug(new_buildings)
     debug(travel_lines)
     debug(buildings)
+    debug("landing_by_type", landing_by_type)
+    debug(dorm_by_type)
+    debug(travel_dict)
 
     new_tubes = []
-    for type, landing in landing_by_type.items():
-        for dorm in dorm_by_type[type]:
-            new_tubes.append(Tube(landing.id, dorm.id))
+    for type, landings in landing_by_type.items():
+        for landing in landings:
+            for dorm in dorm_by_type[type]:
+                new_tubes.append(Tube(landing.id, dorm.id))
 
     new_pod_id = len(pods)
     new_pods = []
-    for type, landing in landing_by_type.values():
-        for dest, line in travel_dict[landing.id]:
-            new_pods.append(Pod(new_pod_id, [landing.id, dest.id, landing.id]))
-            new_pod_id += 1
+    for landings in landing_by_type.values():
+        for landing in landings:
+            for dest_id, line in travel_dict.get(landing.id, []):
+                new_pods.append(Pod(new_pod_id, [landing.id, dest_id, landing.id]))
+                new_pod_id += 1
 
     actions = [tube.to_action() for tube in new_tubes] + [pod.to_action() for pod in new_pods]
     print(";".join(actions))
-    # TUBE | UPGRADE | TELEPORT | POD | DESTROY | WAIT
-    # print("TUBE 0 1;TUBE 0 2;POD 42 0 1 0 2 0")
