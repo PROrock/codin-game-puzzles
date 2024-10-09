@@ -2,7 +2,10 @@
 # 447865 - loop the default pod
 # 732601 - naive tube and pod (back-and-forth in 1 segment) heuristic
 # 1626119 - slight speed optimizations, 100% of TCs yay!
-# 1741860 - another optimisations
+# 1741860 - another optimizations
+# 1741860 - no timeouts thanks to: str ids, compute and build just pods, u can afford
+
+# dorm = lunar module
 
 import time
 from collections import defaultdict
@@ -18,8 +21,8 @@ def debug(*s):
 
 @dataclass(frozen=True)
 class Tube:
-    build1: int
-    build2: int
+    build1: str
+    build2: str
     capacity: int = 1
 
     def __repr__(self):
@@ -44,17 +47,17 @@ class Vect(NamedTuple):
 
 @dataclass(frozen=True)
 class Building:
-    type_: int
-    id: int
+    type_: str
+    id: str
     vect: Vect
     astronauts: Counter
-    LANDING = 0
+    LANDING = "0"
 
     @staticmethod
-    def from_input(building_integers):
-        type_, id, x, y, *rest = building_integers
+    def from_input(building_line):
+        type_, id, x, y, *rest = building_line
         astronauts = Counter(rest[1:]) if rest else Counter()
-        return Building(type_, id, Vect(x, y), astronauts)
+        return Building(type_, id, Vect(int(x), int(y)), astronauts)
 
     def __repr__(self):
         return f"B({self.type_}, {self.id}, {self.vect}, {self.astronauts.most_common()})"
@@ -62,11 +65,11 @@ class Building:
 
 @dataclass(frozen=True)
 class Pod:
-    id: int
-    buildings: List[int]
+    id: str
+    buildings: List[str]
 
     def to_action(self):
-        return f"POD {self.id} {' '.join([str(building) for building in self.buildings])}"
+        return f"POD {self.id} {' '.join(self.buildings)}"
 
 
 resources = -1
@@ -80,7 +83,7 @@ def buildings_by_type(buildings):
     landing_by_type, dorm_by_type = defaultdict(list), defaultdict(list)
     for building in buildings.values():
         if building.type_ == Building.LANDING:
-            for type in dict(building.astronauts.most_common()).keys():
+            for type in building.astronauts:
                 landing_by_type[type].append(building)
         else:
             dorm_by_type[building.type_].append(building)
@@ -100,8 +103,8 @@ while True:
 
     num_travel_routes = int(input())
     for i in range(num_travel_routes):
-        building_id_1, building_id_2, capacity = [int(j) for j in input().split()]
-        travel_lines.append(Tube(building_id_1, building_id_2, capacity))
+        building_id_1, building_id_2, capacity = input().split()
+        travel_lines.append(Tube(building_id_1, building_id_2, int(capacity)))
     travel_dict = build_travel_dict(travel_lines)
 
     num_pods = int(input())
@@ -111,7 +114,7 @@ while True:
     num_new_buildings = int(input())
     new_buildings = {}
     for i in range(num_new_buildings):
-        building_properties = [int(x) for x in input().split()]
+        building_properties = input().split()
         building = Building.from_input(building_properties)
         new_buildings[building.id] = building
     landing_by_type, dorm_by_type = buildings_by_type(new_buildings)
@@ -134,13 +137,18 @@ while True:
                 new_tubes.append(Tube(landing.id, dorm.id))
 
     new_pods = []
-    if resources >= 1000:
-        new_pod_id = num_pods
-        for start_id, end_tuples in travel_dict.items():
-            for end_tuple in end_tuples:
-                dest_id, line = end_tuple
-                new_pods.append(Pod(new_pod_id, [start_id, dest_id, start_id]))
-                new_pod_id += 1
+    # TBD: solve also available after building tubes
+    available_new_pods = resources // 1000
+    new_pod_id = num_pods
+    for start_id, end_tuples in travel_dict.items():
+        for end_tuple in end_tuples:
+            if available_new_pods == 0:
+                break
+
+            dest_id, line = end_tuple
+            new_pods.append(Pod(str(new_pod_id), [start_id, dest_id, start_id]))
+            new_pod_id += 1
+            available_new_pods -= 1
 
     actions = [tube.to_action() for tube in new_tubes] + [pod.to_action() for pod in new_pods]
     print(";".join(actions) if len(actions) else "WAIT")
@@ -151,3 +159,5 @@ while True:
 
     # todo
     # time.sleep(2000)
+
+# next best step would be to stop creating pod on the same tube w/o increasing the capacity, but I don't have time :-/
