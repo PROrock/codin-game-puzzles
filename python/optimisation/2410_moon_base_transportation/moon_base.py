@@ -1,7 +1,10 @@
 # 222995 - default
 # 447865 - loop the default pod
 # 732601 - naive tube and pod (back-and-forth in 1 segment) heuristic
+# 1626119 - slight speed optimizations, 100% of TCs yay!
+# 1741860 - another optimisations
 
+import time
 from collections import defaultdict
 import math
 import sys
@@ -10,7 +13,8 @@ from typing import Counter, NamedTuple, List
 
 
 def debug(*s):
-    print(*s, file=sys.stderr, flush=True)
+    if False:
+        print(*s, file=sys.stderr, flush=True)
 
 @dataclass(frozen=True)
 class Tube:
@@ -38,7 +42,7 @@ class Vect(NamedTuple):
         result_vect = other-self
         return math.hypot(result_vect)
 
-@dataclass
+@dataclass(frozen=True)
 class Building:
     type_: int
     id: int
@@ -56,7 +60,7 @@ class Building:
         return f"B({self.type_}, {self.id}, {self.vect}, {self.astronauts.most_common()})"
 
 
-@dataclass
+@dataclass(frozen=True)
 class Pod:
     id: int
     buildings: List[int]
@@ -67,8 +71,7 @@ class Pod:
 
 resources = -1
 travel_lines = []
-pods = {}
-buildings = {}
+new_buildings = {}
 landing_by_type = {}
 dorm_by_type = {}
 
@@ -93,49 +96,58 @@ def build_travel_dict(travel_lines):
 # game loop
 while True:
     resources = int(input())
+    start = time.perf_counter_ns()
+
     num_travel_routes = int(input())
     for i in range(num_travel_routes):
         building_id_1, building_id_2, capacity = [int(j) for j in input().split()]
-        if capacity == 0:
-            # todo teleport
-            line = Tube(building_id_1, building_id_2, capacity)
-        else:
-            line = Tube(building_id_1, building_id_2, capacity)
-        travel_lines.append(line)
+        travel_lines.append(Tube(building_id_1, building_id_2, capacity))
     travel_dict = build_travel_dict(travel_lines)
 
     num_pods = int(input())
     for i in range(num_pods):
-        pod_properties = input()
+        _ = input()
+
     num_new_buildings = int(input())
-    new_buildings = []
+    new_buildings = {}
     for i in range(num_new_buildings):
         building_properties = [int(x) for x in input().split()]
         building = Building.from_input(building_properties)
-        new_buildings.append(building)
-        buildings[building.id] = building
-    landing_by_type, dorm_by_type = buildings_by_type(buildings)
+        new_buildings[building.id] = building
+    landing_by_type, dorm_by_type = buildings_by_type(new_buildings)
 
-    debug(new_buildings)
-    debug(travel_lines)
-    debug(buildings)
-    debug("landing_by_type", landing_by_type)
-    debug(dorm_by_type)
-    debug(travel_dict)
+    read_done = time.perf_counter_ns()
+    debug("read-only all", (read_done-start)/1_000_000)
+
+    # debug(new_buildings)
+    # debug(travel_lines)
+    # debug("landing_by_type", landing_by_type)
+    # debug(dorm_by_type)
+    # debug(travel_dict)
 
     new_tubes = []
     for type, landings in landing_by_type.items():
         for landing in landings:
-            for dorm in dorm_by_type[type]:
+            # TBD: closest dorm at least?
+            dorm = dorm_by_type[type][0] if len(dorm_by_type[type]) else None
+            if dorm:
                 new_tubes.append(Tube(landing.id, dorm.id))
 
-    new_pod_id = len(pods)
     new_pods = []
-    for landings in landing_by_type.values():
-        for landing in landings:
-            for dest_id, line in travel_dict.get(landing.id, []):
-                new_pods.append(Pod(new_pod_id, [landing.id, dest_id, landing.id]))
+    if resources >= 1000:
+        new_pod_id = num_pods
+        for start_id, end_tuples in travel_dict.items():
+            for end_tuple in end_tuples:
+                dest_id, line = end_tuple
+                new_pods.append(Pod(new_pod_id, [start_id, dest_id, start_id]))
                 new_pod_id += 1
 
     actions = [tube.to_action() for tube in new_tubes] + [pod.to_action() for pod in new_pods]
-    print(";".join(actions))
+    print(";".join(actions) if len(actions) else "WAIT")
+
+    end = time.perf_counter_ns()
+    debug("heur-only all", (end-read_done)/1_000_000)
+    debug("elapsed   all", (end-start)/1_000_000)
+
+    # todo
+    # time.sleep(2000)
