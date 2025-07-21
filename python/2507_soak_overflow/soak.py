@@ -33,6 +33,40 @@ class Vect(NamedTuple):
         result_vect = other - self
         return math.hypot(result_vect)
 
+grid = []
+def elem_at_pos(grid: List[Any], pos: Vect):
+    return grid[pos.y][pos.x]
+
+def inbounds(grid: List[Any], pos: Vect):
+    return 0 <= pos.x < len(grid[0]) and 0 <= pos.y < len(grid)
+
+def debug_grid(grid):
+    debug("GRID")
+    for line in grid:
+        debug("".join([str(c) for c in line]))
+    debug("GRID END")
+
+ARR_TO_VECT = {
+    "^": Vect(0, -1),
+    ">": Vect(1, 0),
+    "v": Vect(0, 1),
+    "<": Vect(-1, 0),
+}
+VECTS_CLOCKWISE = list(ARR_TO_VECT.values())
+
+def expand(grid, pos):
+    children = []
+    for dir_ in VECTS_CLOCKWISE:
+        new_pos = pos + dir_
+        if inbounds(grid, new_pos) and elem_at_pos(grid, new_pos) == 0:
+            children.append(new_pos)
+    return children
+
+def neighbours(p: Vect):
+    kids = expand(grid, p)
+    return {n: elem_at_pos(grid, n) for n in kids}
+
+
 @dataclass
 class Agent:
     id: int
@@ -57,6 +91,13 @@ class A:
     def shoot(agent_id: int):
         return f"SHOOT {agent_id}"
 
+######
+def get_max_cover(agent: Agent, enemies):
+    kids = neighbours(a.p)
+    for k in kids:
+        for e in enemies:
+            # todo
+            cover = 0
 
 
 # Win the water fight by controlling the most territory, or out-soak your opponent!
@@ -77,6 +118,7 @@ for i in range(agent_data_count):
 # height: Height of the game map
 width, height = [int(i) for i in input().split()]
 for i in range(height):
+    line = []
     inputs = input().split()
     for j in range(width):
         # x: X coordinate, 0 is left edge
@@ -84,6 +126,10 @@ for i in range(height):
         x = int(inputs[3*j])
         y = int(inputs[3*j+1])
         tile_type = int(inputs[3*j+2])
+        line.append(tile_type)
+    grid.append(line)
+
+# debug_grid(grid)
 
 # game loop
 while True:
@@ -102,17 +148,21 @@ while True:
         agents[agent_id] = u
 
     my_agent_count = int(input())  # Number of alive agents controlled by you
-    for i in range(my_agent_count):
-        enemies = [a for a in agents.values() if not a.is_mine(my_id)]
-        # debug(agents)
-        # debug(enemies)
-        
+    mine = [a for a in agents.values() if a.is_mine(my_id)]
+    enemies = [a for a in agents.values() if not a.is_mine(my_id)]
+    for a in mine:
+
+        # todo        
+        max_cover = get_max_cover(a, enemies)
+
         wettest = max(enemies, key=lambda a: a.wetness)
 
-        print(A.shoot(wettest.id))
+        
+        actions = [A.move(a.p), A.shoot(wettest.id)]
+        print(";".join(actions))
+        # print(f"{a.id};{action}")
         # Write an action using print
         # To debug: print("Debug messages...", file=sys.stderr, flush=True)
-
 
         # One line per agent: <agentId>;<action1;action2;...> actions are "MOVE x y | SHOOT id | THROW x y | HUNKER_DOWN | MESSAGE text"
         #print("HUNKER_DOWN")
