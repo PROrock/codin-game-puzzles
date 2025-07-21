@@ -1,15 +1,14 @@
 import sys
 import math
 
-from typing import NamedTuple, Any, List
+from typing import NamedTuple, Any, List, Optional
+from dataclasses import dataclass
 
 WALL = "#"
 EMPTY = "."
 
-class A:
-    @staticmethod
-    def move(v):
-        return f"MOVE {v.x} {v.y}"
+def debug(*s):
+    print(*s, file=sys.stderr, flush=True)
 
 class Vect(NamedTuple):
     x: int
@@ -34,11 +33,37 @@ class Vect(NamedTuple):
         result_vect = other - self
         return math.hypot(result_vect)
 
+@dataclass
+class Agent:
+    id: int
+    player: int
+    shoot_cooldown: int
+    optimal_range: int
+    soaking_power: int
+    splash_bombs: int
+    p: Optional[Vect]
+    cooldown: Optional[int]
+    wetness: Optional[int]
+
+    def is_mine(self, my_id: int):
+        return self.player == my_id
+
+class A:
+    @staticmethod
+    def move(v: Vect):
+        return f"MOVE {v.x} {v.y}"
+
+    @staticmethod
+    def shoot(agent_id: int):
+        return f"SHOOT {agent_id}"
+
+
 
 # Win the water fight by controlling the most territory, or out-soak your opponent!
 
 my_id = int(input())  # Your player id (0 or 1)
 agent_data_count = int(input())  # Total number of agents in the game
+orig_agents = {}
 for i in range(agent_data_count):
     # agent_id: Unique identifier for this agent
     # player: Player id of this agent
@@ -47,6 +72,7 @@ for i in range(agent_data_count):
     # soaking_power: Damage output within optimal conditions
     # splash_bombs: Number of splash bombs this can throw this game
     agent_id, player, shoot_cooldown, optimal_range, soaking_power, splash_bombs = [int(j) for j in input().split()]
+    orig_agents[agent_id] = Agent(agent_id, player, shoot_cooldown, optimal_range, soaking_power, splash_bombs, None, None, None)
 # width: Width of the game map
 # height: Height of the game map
 width, height = [int(i) for i in input().split()]
@@ -61,15 +87,29 @@ for i in range(height):
 
 # game loop
 while True:
-    goals = [Vect(6,1),Vect(6,3)]
+    agents = {}
     agent_count = int(input())  # Total number of agents still in the game
     for i in range(agent_count):
         # cooldown: Number of turns before this agent can shoot
         # wetness: Damage (0-100) this agent has taken
         agent_id, x, y, cooldown, splash_bombs, wetness = [int(j) for j in input().split()]
+        u = orig_agents[agent_id]
+
+        u.p = Vect(x,y)
+        u.cooldown = cooldown
+        u.splash_bombs = splash_bombs
+        u.wetness = wetness
+        agents[agent_id] = u
+
     my_agent_count = int(input())  # Number of alive agents controlled by you
     for i in range(my_agent_count):
-        print(A.move(goals.pop()))
+        enemies = [a for a in agents.values() if not a.is_mine(my_id)]
+        # debug(agents)
+        # debug(enemies)
+        
+        wettest = max(enemies, key=lambda a: a.wetness)
+
+        print(A.shoot(wettest.id))
         # Write an action using print
         # To debug: print("Debug messages...", file=sys.stderr, flush=True)
 
