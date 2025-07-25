@@ -1,11 +1,11 @@
 import sys
 import math
 
-from typing import NamedTuple, Any, List, Optional
+from typing import NamedTuple, Any, List, Optional, Literal
 from dataclasses import dataclass
 
-WALL = "#"
-EMPTY = "."
+# predtim z gitu to lze vzit
+# 25.7. 1556-1705
 
 def debug(*s):
     print(*s, file=sys.stderr, flush=True)
@@ -31,7 +31,7 @@ class Vect(NamedTuple):
 
     def l2_dist(self, other):
         result_vect = other - self
-        return math.hypot(result_vect)
+        return math.hypot(*result_vect)
 
 grid = []
 def elem_at_pos(grid: List[Any], pos: Vect):
@@ -52,19 +52,53 @@ ARR_TO_VECT = {
     "v": Vect(0, 1),
     "<": Vect(-1, 0),
 }
+VECT_TO_ARR = {v:a for a,v in ARR_TO_VECT.items()}
 VECTS_CLOCKWISE = list(ARR_TO_VECT.values())
 
 def expand(grid, pos):
     children = []
     for dir_ in VECTS_CLOCKWISE:
         new_pos = pos + dir_
-        if inbounds(grid, new_pos) and elem_at_pos(grid, new_pos) == 0:
+        if inbounds(grid, new_pos):
             children.append(new_pos)
     return children
 
 def neighbours(p: Vect):
     kids = expand(grid, p)
     return {n: elem_at_pos(grid, n) for n in kids}
+
+# from enum import Enum 
+# class Cover(Enum):
+#     LEFT = ("<", lambda v: v.x < ???)
+
+#     def __init__(self, symbol: str, applies_func):
+#         self.symbol = symbol
+#         self.applies = applies_func
+
+@dataclass
+class Cover:
+    p: Vect
+    height: float
+    direction: str
+
+    def applies(self, enemy_pos: Vect):
+        if self.direction == "<":
+            return enemy_pos.x < self.p.x
+        elif self.direction == ">":
+            return enemy_pos.x > self.p.x
+        elif self.direction == "^":
+            return enemy_pos.y < self.p.y
+        else:
+            return enemy_pos.y > self.p.y
+
+    @staticmethod
+    def left(cover_pos: Vect):
+        left_inner = lambda enemy_pos: enemy_pos.x < cover_pos.x
+        return left_inner
+
+    @staticmethod
+    def right(cover_pos: Vect):
+        return lambda enemy_pos: enemy_pos.x > cover_pos.x
 
 
 @dataclass
@@ -92,12 +126,48 @@ class A:
         return f"SHOOT {agent_id}"
 
 ######
-def get_max_cover(agent: Agent, enemies):
-    kids = neighbours(a.p)
-    for k in kids:
-        for e in enemies:
-            # todo
-            cover = 0
+
+class Move(NamedTuple):
+    p: Vect
+    covers: list[Cover]
+
+class Shoot(NamedTuple):
+    enemy: Agent
+    covers: list[Cover]
+
+def get_covers(p: Vect):
+    covers = []
+    candidates = expand(grid, p)
+    for c in candidates:
+        if (tile := elem_at_pos(grid, c)) > 0:
+            covers.append(Cover(c, (tile+1)/4, VECT_TO_ARR[c-p]))
+    return covers
+
+def get_moves(agent_p: Vect):
+    moves = []
+    possibles = expand(grid, agent_p)
+    for poss in possibles:
+        if elem_at_pos(grid, poss) > 0:
+            continue  # cover
+        covers = get_covers(poss)
+        moves.append(Move(poss, covers))
+    return moves
+
+def get_max_cover_move(agent_p: Vect, enemies):
+    moves = get_moves(agent_p)
+    sorted_moves = list(reversed(sorted(moves, key=lambda m: m.covers[0].height)))
+    return sorted_moves[0].p
+    # todo enemies
+        # for e in enemies:
+        #     # todo
+        #     cover = 0
+
+def get_min_cover_enemy(agent_p: Vect, enemies):
+    shoots = [Shoot(e, get_covers(e.p)) for e in enemies]
+    # todo no Cover -> list out of range
+    sorted_shoots = list(sorted(shoots, key=lambda m: m.covers[0].height))
+    return sorted_shoots[0].enemy
+    # todo enemies
 
 
 # Win the water fight by controlling the most territory, or out-soak your opponent!
@@ -150,15 +220,22 @@ while True:
     my_agent_count = int(input())  # Number of alive agents controlled by you
     mine = [a for a in agents.values() if a.is_mine(my_id)]
     enemies = [a for a in agents.values() if not a.is_mine(my_id)]
+    debug(mine)
     for a in mine:
 
         # todo        
-        max_cover = get_max_cover(a, enemies)
+        max_cover = get_max_cover_move(a.p, enemies)
 
-        wettest = max(enemies, key=lambda a: a.wetness)
+        close_enemies = [e for e in enemies if a.p.l2_dist(e.p) <= a.optimal_range]
+        if not close_enemies:
+            # todo 2x optimal_range
+            close_enemies = enemies
+
+        least_protected = get_min_cover_enemy(a.p, close_enemies)
+        # wettest = max(enemies, key=lambda a: a.wetness)
 
         
-        actions = [A.move(a.p), A.shoot(wettest.id)]
+        actions = [A.move(max_cover), A.shoot(least_protected.id)]
         print(";".join(actions))
         # print(f"{a.id};{action}")
         # Write an action using print
